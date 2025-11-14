@@ -96,8 +96,14 @@
           >{{ formatAmount(result.totalAmount) }} 元</text
         >
       </view>
+      <view v-if="formData.splitRule === '普通分账'" class="result-item">
+        <text class="result-label">🌸 人均费用</text>
+        <text class="result-value highlight"
+          >{{ formatAmount(result.chunfengAmount) }} 元</text
+        >
+      </view>
 
-      <view class="summary">
+      <view v-if="formData.splitRule === '特殊分账'" class="summary">
         <text class="summary-title">💫 费用分摊明细：</text>
         <view class="result-item">
           <text class="result-label">🍐 李子应承担</text>
@@ -130,9 +136,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import {
-  formatAmount,
-} from "@/utils/helpers.js";
+import { formatAmount } from "@/utils/helpers.js";
 
 // 分账规则选项
 const splitRuleOptions = ["普通分账", "特殊分账"];
@@ -176,14 +180,13 @@ const result = ref({
   geziAmount: 0,
   liziAmount: 0,
   chengziAmount: 0,
-  chunfengAmount: 0
+  chunfengAmount: 0,
 });
 
 // 摘要标题
 const summaryTitle = computed(() => {
   return "🧾 本次账单：";
 });
-
 
 // 分账规则选择变化
 const onSplitRuleChange = (e) => {
@@ -265,7 +268,6 @@ const calculateBill = () => {
     geziAmount += electricBill / 6;
     chunfengAmount += electricBill / 3;
     chengziAmount += electricBill / 3;
-
   } else if (formData.value.splitRule === "特殊分账") {
     // 特殊分账规则：在普通分账基础上，橙子费用减少一半，减少的钱由李子和鸽子各承担一半
 
@@ -613,4 +615,3 @@ defineExpose({
   font-size: 44rpx;
 }
 </style>
-

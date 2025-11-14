@@ -18,16 +18,19 @@
       <!-- 李子的分账计算器 -->
       <view
         class="card"
-        :class="{ 'has-bg': liziCard.background }"
+        :class="{ 'has-bg': liziCard.background && liziCard.enableBackground }"
         @click="navigateToLizi"
       >
         <image
-          v-if="liziCard.background"
+          v-if="liziCard.background && liziCard.enableBackground"
           mode="aspectFill"
           :src="liziCard.background"
           class="card-bg-image"
         />
-        <view v-if="liziCard.background" class="card-overlay"></view>
+        <view
+          v-if="liziCard.background && liziCard.enableBackground"
+          class="card-overlay"
+        ></view>
         <view class="card-header">
           <view class="card-avatars">
             <view class="avatar">{{ liziCard.avatar }}</view>
@@ -50,16 +53,19 @@
       <!-- 鸽子的分账计算器 -->
       <view
         class="card"
-        :class="{ 'has-bg': geziCard.background }"
+        :class="{ 'has-bg': geziCard.background && geziCard.enableBackground }"
         @click="navigateToGezi"
       >
         <image
-          v-if="geziCard.background"
+          v-if="geziCard.background && geziCard.enableBackground"
           mode="aspectFill"
           :src="geziCard.background"
           class="card-bg-image"
         />
-        <view v-if="geziCard.background" class="card-overlay"></view>
+        <view
+          v-if="geziCard.background && geziCard.enableBackground"
+          class="card-overlay"
+        ></view>
         <view class="card-header">
           <view class="card-avatars">
             <view class="avatar">{{ geziCard.avatar }}</view>
@@ -119,6 +125,45 @@
               class="form-input"
             />
           </view>
+          <view class="form-group">
+            <text class="form-label">启用背景图</text>
+            <view class="switch-container">
+              <view class="custom-switch" @tap="toggleBackground">
+                <view
+                  class="switch-track"
+                  :class="{ active: editingCard.enableBackground }"
+                >
+                  <view
+                    class="switch-thumb"
+                    :class="{ active: editingCard.enableBackground }"
+                  ></view>
+                </view>
+              </view>
+              <text
+                class="switch-label"
+                :class="{ active: editingCard.enableBackground }"
+              >
+                {{ editingCard.enableBackground ? "已启用" : "已禁用" }}
+              </text>
+            </view>
+            <view
+              v-if="editingCard.enableBackground && !editingCard.background"
+              class="background-tip"
+            >
+              <text class="tip-text">💡 启用后需要设置背景图片</text>
+            </view>
+            <view
+              v-if="editingCard.enableBackground && editingCard.background"
+              class="background-preview"
+            >
+              <image
+                :src="editingCard.background"
+                mode="aspectFill"
+                class="preview-image"
+              />
+              <text class="preview-text">当前背景图片</text>
+            </view>
+          </view>
         </view>
         <view class="modal-footer">
           <button class="btn btn-secondary" @tap="closeEditModal">取消</button>
@@ -141,6 +186,7 @@ const liziCard = ref({
   description: "分账让生活更简单",
   avatar: "🍐",
   background: "",
+  enableBackground: true,
 });
 
 const geziCard = ref({
@@ -148,6 +194,7 @@ const geziCard = ref({
   description: "记录每一份美好小账单",
   avatar: "🕊️",
   background: "",
+  enableBackground: true,
 });
 
 // 弹窗相关状态
@@ -202,6 +249,11 @@ const closeEditModal = () => {
   showEditModal.value = false;
   editingCard.value = {};
   editingCardType.value = "";
+};
+
+// 背景图开关切换
+const toggleBackground = () => {
+  editingCard.value.enableBackground = !editingCard.value.enableBackground;
 };
 
 // 保存卡片编辑
@@ -358,24 +410,44 @@ const loadCardData = () => {
     // 加载李子卡片数据
     const liziData = uni.getStorageSync("lizi_card");
     if (liziData) {
-      liziCard.value = { ...liziCard.value, ...liziData };
+      liziCard.value = {
+        ...liziCard.value,
+        ...liziData,
+        // 确保enableBackground字段有默认值
+        enableBackground:
+          liziData.enableBackground !== undefined
+            ? liziData.enableBackground
+            : false,
+      };
     }
 
     // 加载鸽子卡片数据
     const geziData = uni.getStorageSync("gezi_card");
     if (geziData) {
-      geziCard.value = { ...geziCard.value, ...geziData };
+      geziCard.value = {
+        ...geziCard.value,
+        ...geziData,
+        // 确保enableBackground字段有默认值
+        enableBackground:
+          geziData.enableBackground !== undefined
+            ? geziData.enableBackground
+            : false,
+      };
     }
 
     // 兼容旧版本数据
     const oldLiziBackground = uni.getStorageSync("lizi_background");
     if (oldLiziBackground && !liziCard.value.background) {
       liziCard.value.background = oldLiziBackground;
+      // 如果有旧背景图，默认启用
+      liziCard.value.enableBackground = true;
     }
 
     const oldGeziBackground = uni.getStorageSync("gezi_background");
     if (oldGeziBackground && !geziCard.value.background) {
       geziCard.value.background = oldGeziBackground;
+      // 如果有旧背景图，默认启用
+      geziCard.value.enableBackground = true;
     }
   } catch (e) {
     console.error("加载卡片数据失败", e);
@@ -599,7 +671,24 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40rpx;
+  padding: 40rpx 20rpx;
+}
+
+/* 小屏幕适配 */
+@media screen and (max-height: 700px) {
+  .modal-overlay {
+    padding: 20rpx 20rpx;
+    align-items: flex-start;
+    padding-top: 60rpx;
+  }
+
+  .modal-content {
+    max-height: 85vh;
+  }
+
+  .modal-body {
+    max-height: calc(85vh - 180rpx);
+  }
 }
 
 .modal-content {
@@ -610,6 +699,8 @@ defineExpose({
   max-height: 80vh;
   overflow: hidden;
   box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -618,6 +709,7 @@ defineExpose({
   align-items: center;
   padding: 40rpx;
   border-bottom: 1rpx solid #e8f0f5;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -640,10 +732,36 @@ defineExpose({
 
 .modal-body {
   padding: 40rpx;
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(80vh - 200rpx);
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6rpx;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10rpx;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10rpx;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .form-group {
-  margin-bottom: 40rpx;
+  margin-bottom: 32rpx;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
 }
 
 .form-label {
@@ -671,11 +789,129 @@ defineExpose({
   background: #fff;
 }
 
+.switch-container {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.custom-switch {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.switch-track {
+  width: 100rpx;
+  height: 60rpx;
+  background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+  border-radius: 30rpx;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2rpx solid #e2e8f0;
+  box-shadow: inset 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+.switch-track.active {
+  background: linear-gradient(135deg, #ffb3d9 0%, #ff9ab8 100%);
+  border-color: #ff9ab8;
+  box-shadow: 0 4rpx 12rpx rgba(255, 154, 184, 0.3),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.3);
+}
+
+.switch-thumb {
+  width: 48rpx;
+  height: 48rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 50%;
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.15), 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  transform: scale(1);
+}
+
+.switch-thumb.active {
+  left: 44rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #fef7f7 100%);
+  transform: scale(1.05);
+  box-shadow: 0 6rpx 12rpx rgba(255, 154, 184, 0.2),
+    0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+}
+
+.switch-label {
+  font-size: 32rpx;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.switch-label.active {
+  color: #ff6b9d;
+  font-weight: 600;
+}
+
+.background-tip {
+  margin-top: 20rpx;
+  padding: 20rpx 24rpx;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 193, 7, 0.1) 0%,
+    rgba(255, 235, 59, 0.05) 100%
+  );
+  border-radius: 16rpx;
+  border-left: 6rpx solid #ffc107;
+  border: 1rpx solid rgba(255, 193, 7, 0.2);
+  box-shadow: 0 2rpx 8rpx rgba(255, 193, 7, 0.1);
+}
+
+.tip-text {
+  font-size: 28rpx;
+  color: #b45309;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.background-preview {
+  margin-top: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 20rpx;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 179, 217, 0.05) 0%,
+    rgba(255, 154, 184, 0.03) 100%
+  );
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(255, 154, 184, 0.2);
+}
+
+.preview-image {
+  width: 100%;
+  height: 200rpx;
+  border-radius: 12rpx;
+  background: #f5f5f5;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.preview-text {
+  font-size: 28rpx;
+  color: #ff6b9d;
+  text-align: center;
+  font-weight: 500;
+}
+
 .modal-footer {
   padding: 40rpx;
   border-top: 1rpx solid #e8f0f5;
   display: flex;
   gap: 24rpx;
+  flex-shrink: 0;
 }
 
 .btn {
