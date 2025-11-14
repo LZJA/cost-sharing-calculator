@@ -4,7 +4,7 @@
     <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
     <view v-if="!isShareMode" class="header">
-      <text class="title">💧⚡🔥 鸽子的分账计算器</text>
+      <text class="title">💧⚡🔥 {{ pageTitle }}</text>
     </view>
 
     <view v-if="!isShareMode" class="form-container">
@@ -166,6 +166,9 @@ const isShareMode = ref(false);
 
 // 状态栏高度
 const statusBarHeight = ref(0);
+
+// 页面标题
+const pageTitle = ref("鸽子的分账计算器");
 
 // 计算结果
 const result = ref({
@@ -360,6 +363,16 @@ onMounted(() => {
       statusBarHeight.value = 20; // 默认值
     },
   });
+
+  // 从存储中加载页面标题
+  try {
+    const geziCard = uni.getStorageSync("gezi_card");
+    if (geziCard && geziCard.name) {
+      pageTitle.value = geziCard.name;
+    }
+  } catch (e) {
+    console.error("加载页面标题失败", e);
+  }
 });
 
 // 导出分享方法供小程序调用

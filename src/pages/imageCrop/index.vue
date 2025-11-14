@@ -17,7 +17,7 @@
         :min-scale="1"
         :max-scale="3"
         :check-range="true"
-        :choosable="false"
+        :choosable="true"
         :rotatable="true"
         :reverse-rotatable="true"
         @load="onImageLoad"
@@ -46,15 +46,6 @@ onMounted(() => {
   uni.getSystemInfo({
     success: (res) => {
       statusBarHeight.value = res.statusBarHeight || 20;
-
-      // 根据屏幕宽度调整裁剪器尺寸
-      const screenWidth = res.windowWidth;
-      const padding = 40;
-      const maxSize = Math.min(screenWidth - padding, 400);
-
-      // 设置裁剪器尺寸
-      cropperWidth.value = maxSize;
-      cropperHeight.value = maxSize;
     },
   });
 

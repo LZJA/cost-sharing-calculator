@@ -4,7 +4,7 @@
     <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
     <view v-if="!isShareMode" class="header">
-      <text class="title">💧⚡🔥 李子的分账计算器</text>
+      <text class="title">{{ pageTitle }}</text>
     </view>
 
     <view v-if="!isShareMode" class="form-container">
@@ -174,7 +174,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import dayjs from 'dayjs';
+import dayjs from "dayjs";
 import {
   getLastMonth,
   getDaysInMonth,
@@ -221,6 +221,9 @@ const isShareMode = ref(false);
 
 // 状态栏高度
 const statusBarHeight = ref(0);
+
+// 页面标题
+const pageTitle = ref("李子的分账计算器");
 
 // 计算结果
 const result = ref({
@@ -424,6 +427,16 @@ onMounted(() => {
       statusBarHeight.value = 20; // 默认值
     },
   });
+
+  // 从存储中加载页面标题
+  try {
+    const liziCard = uni.getStorageSync("lizi_card");
+    if (liziCard && liziCard.name) {
+      pageTitle.value = liziCard.name;
+    }
+  } catch (e) {
+    console.error("加载页面标题失败", e);
+  }
 });
 
 // 导出分享方法供小程序调用
@@ -664,4 +677,3 @@ defineExpose({
   font-size: 44rpx;
 }
 </style>
-

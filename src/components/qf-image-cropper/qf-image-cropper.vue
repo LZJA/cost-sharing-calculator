@@ -801,7 +801,6 @@ export default {
     z-index: 99;
     display: flex;
     flex-direction: row;
-    background-color: #f5f5f5;
 
     .action-bar {
       position: absolute;
@@ -822,22 +821,28 @@ export default {
     }
 
     .rechoose {
-      color: #007aff;
+      color: #fff;
       padding: 0 32rpx;
+      font-size: 32rpx;
       line-height: 100rpx;
     }
 
     .choose-btn {
-      color: #007aff;
+      color: #fff;
       text-align: center;
       line-height: 100rpx;
       flex: 1;
     }
 
     .button {
+      font-size: 32rpx;
       margin: auto 32rpx auto auto;
-      background-color: #007aff;
+      background: transparent;
+
       color: #fff;
+      &::after {
+        border: none;
+      }
     }
   }
 

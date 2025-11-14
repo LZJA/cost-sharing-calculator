@@ -18,62 +18,64 @@
       <!-- 李子的分账计算器 -->
       <view
         class="card"
-        :class="{ 'has-bg': liziBackground }"
+        :class="{ 'has-bg': liziCard.background }"
         @click="navigateToLizi"
       >
         <image
-          v-if="liziBackground"
+          v-if="liziCard.background"
           mode="aspectFill"
-          :src="liziBackground"
+          :src="liziCard.background"
           class="card-bg-image"
         />
-        <view v-if="liziBackground" class="card-overlay"></view>
+        <view v-if="liziCard.background" class="card-overlay"></view>
         <view class="card-header">
           <view class="card-avatars">
-            <view class="avatar">🍐</view>
-          </view>
-          <view class="edit-bg-btn" @tap.stop="editLiziBackground">
-            <text class="icon">🎨</text>
+            <view class="avatar">{{ liziCard.avatar }}</view>
           </view>
         </view>
         <view class="card-content">
-          <text class="card-title">李子的分账计算器</text>
-          <text class="card-balance">分账让生活更简单</text>
+          <text class="card-title">{{ liziCard.name }}</text>
+          <text class="card-balance">{{ liziCard.description }}</text>
         </view>
         <view class="card-footer">
-          <view class="card-action-icon">📷</view>
-          <view class="card-action-icon">📋</view>
+          <view class="card-action-icon" @tap.stop="editLiziCard">
+            <text>✏️</text>
+          </view>
+          <view class="card-action-icon" @tap.stop="editLiziBackground">
+            <text>🎨</text>
+          </view>
         </view>
       </view>
 
       <!-- 鸽子的分账计算器 -->
       <view
         class="card"
-        :class="{ 'has-bg': geziBackground }"
+        :class="{ 'has-bg': geziCard.background }"
         @click="navigateToGezi"
       >
         <image
-          v-if="geziBackground"
+          v-if="geziCard.background"
           mode="aspectFill"
-          :src="geziBackground"
+          :src="geziCard.background"
           class="card-bg-image"
         />
-        <view v-if="geziBackground" class="card-overlay"></view>
+        <view v-if="geziCard.background" class="card-overlay"></view>
         <view class="card-header">
           <view class="card-avatars">
-            <view class="avatar">🕊️</view>
-          </view>
-          <view class="edit-bg-btn" @tap.stop="editGeziBackground">
-            <text class="icon">🎨</text>
+            <view class="avatar">{{ geziCard.avatar }}</view>
           </view>
         </view>
         <view class="card-content">
-          <text class="card-title">鸽子的分账计算器</text>
-          <text class="card-balance">记录每一份美好小账单</text>
+          <text class="card-title">{{ geziCard.name }}</text>
+          <text class="card-balance">{{ geziCard.description }}</text>
         </view>
         <view class="card-footer">
-          <view class="card-action-icon">📷</view>
-          <view class="card-action-icon">📋</view>
+          <view class="card-action-icon" @tap.stop="editGeziCard">
+            <text>✏️</text>
+          </view>
+          <view class="card-action-icon" @tap.stop="editGeziBackground">
+            <text>🎨</text>
+          </view>
         </view>
       </view>
     </view>
@@ -81,6 +83,48 @@
     <!-- 底部提示 -->
     <view class="footer-tip">
       <text class="tip-text">💡 选择计算器开始分账</text>
+    </view>
+
+    <!-- 编辑卡片弹窗 -->
+    <view v-if="showEditModal" class="modal-overlay" @tap="closeEditModal">
+      <view class="modal-content" @tap.stop>
+        <view class="modal-header">
+          <text class="modal-title">编辑卡片信息</text>
+          <view class="modal-close" @tap="closeEditModal">
+            <text>✕</text>
+          </view>
+        </view>
+        <view class="modal-body">
+          <view class="form-group">
+            <text class="form-label">卡片名称</text>
+            <input
+              v-model="editingCard.name"
+              placeholder="请输入卡片名称"
+              class="form-input"
+            />
+          </view>
+          <view class="form-group">
+            <text class="form-label">描述语</text>
+            <input
+              v-model="editingCard.description"
+              placeholder="请输入描述语"
+              class="form-input"
+            />
+          </view>
+          <view class="form-group">
+            <text class="form-label">头像 (emoji)</text>
+            <input
+              v-model="editingCard.avatar"
+              placeholder="请输入emoji"
+              class="form-input"
+            />
+          </view>
+        </view>
+        <view class="modal-footer">
+          <button class="btn btn-secondary" @tap="closeEditModal">取消</button>
+          <button class="btn btn-primary" @tap="saveCardEdit">保存</button>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -91,9 +135,25 @@ import { ref, onMounted, getCurrentInstance } from "vue";
 // 状态栏高度
 const statusBarHeight = ref(0);
 
-// 背景图片
-const liziBackground = ref("");
-const geziBackground = ref("");
+// 卡片数据
+const liziCard = ref({
+  name: "李子的分账计算器",
+  description: "分账让生活更简单",
+  avatar: "🍐",
+  background: "",
+});
+
+const geziCard = ref({
+  name: "鸽子的分账计算器",
+  description: "记录每一份美好小账单",
+  avatar: "🕊️",
+  background: "",
+});
+
+// 弹窗相关状态
+const showEditModal = ref(false);
+const editingCard = ref({});
+const editingCardType = ref("");
 
 // 导航到李子的分账计算器
 const navigateToLizi = () => {
@@ -121,6 +181,55 @@ const navigateToGezi = () => {
       });
     },
   });
+};
+
+// 编辑李子卡片
+const editLiziCard = () => {
+  editingCard.value = { ...liziCard.value };
+  editingCardType.value = "lizi";
+  showEditModal.value = true;
+};
+
+// 编辑鸽子卡片
+const editGeziCard = () => {
+  editingCard.value = { ...geziCard.value };
+  editingCardType.value = "gezi";
+  showEditModal.value = true;
+};
+
+// 关闭编辑弹窗
+const closeEditModal = () => {
+  showEditModal.value = false;
+  editingCard.value = {};
+  editingCardType.value = "";
+};
+
+// 保存卡片编辑
+const saveCardEdit = () => {
+  if (!editingCard.value.name || !editingCard.value.description) {
+    uni.showToast({
+      title: "请填写完整信息",
+      icon: "none",
+    });
+    return;
+  }
+
+  if (editingCardType.value === "lizi") {
+    liziCard.value = { ...editingCard.value };
+    // 保存到本地存储
+    uni.setStorageSync("lizi_card", liziCard.value);
+  } else if (editingCardType.value === "gezi") {
+    geziCard.value = { ...editingCard.value };
+    // 保存到本地存储
+    uni.setStorageSync("gezi_card", geziCard.value);
+  }
+
+  uni.showToast({
+    title: "保存成功",
+    icon: "success",
+  });
+
+  closeEditModal();
 };
 
 // 编辑李子卡片背景
@@ -226,14 +335,15 @@ const cropImage = (imagePath, cardType) => {
 
 // 设置卡片背景
 const setCardBackground = (imagePath, cardType) => {
-  // 保存到本地存储
-  uni.setStorageSync(`${cardType}_background`, imagePath);
-
-  // 更新显示
+  // 更新卡片对象中的背景图片
   if (cardType === "lizi") {
-    liziBackground.value = `${imagePath}`;
+    liziCard.value.background = imagePath;
+    // 保存整个卡片对象到本地存储
+    uni.setStorageSync("lizi_card", liziCard.value);
   } else if (cardType === "gezi") {
-    geziBackground.value = `${imagePath}`;
+    geziCard.value.background = imagePath;
+    // 保存整个卡片对象到本地存储
+    uni.setStorageSync("gezi_card", geziCard.value);
   }
 
   uni.showToast({
@@ -242,20 +352,33 @@ const setCardBackground = (imagePath, cardType) => {
   });
 };
 
-// 加载背景图片
-const loadBackgrounds = () => {
+// 加载卡片数据
+const loadCardData = () => {
   try {
-    const liziImg = uni.getStorageSync("lizi_background");
-    const geziImg = uni.getStorageSync("gezi_background");
-
-    if (liziImg) {
-      liziBackground.value = `${liziImg}`;
+    // 加载李子卡片数据
+    const liziData = uni.getStorageSync("lizi_card");
+    if (liziData) {
+      liziCard.value = { ...liziCard.value, ...liziData };
     }
-    if (geziImg) {
-      geziBackground.value = `${geziImg}`;
+
+    // 加载鸽子卡片数据
+    const geziData = uni.getStorageSync("gezi_card");
+    if (geziData) {
+      geziCard.value = { ...geziCard.value, ...geziData };
+    }
+
+    // 兼容旧版本数据
+    const oldLiziBackground = uni.getStorageSync("lizi_background");
+    if (oldLiziBackground && !liziCard.value.background) {
+      liziCard.value.background = oldLiziBackground;
+    }
+
+    const oldGeziBackground = uni.getStorageSync("gezi_background");
+    if (oldGeziBackground && !geziCard.value.background) {
+      geziCard.value.background = oldGeziBackground;
     }
   } catch (e) {
-    console.error("加载背景图片失败", e);
+    console.error("加载卡片数据失败", e);
   }
 };
 
@@ -279,8 +402,8 @@ onMounted(() => {
     },
   });
 
-  // 加载背景图片
-  loadBackgrounds();
+  // 加载卡片数据
+  loadCardData();
 });
 
 // 页面分享配置
@@ -438,7 +561,12 @@ defineExpose({
 }
 
 .card {
-  background: linear-gradient(145deg, #ffffff 0%, #fafbfc 50%, #f5f7fa 100%);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(250, 251, 252, 0.3) 50%,
+    rgba(245, 247, 250, 0.3) 100%
+  );
   border-radius: 32rpx;
   padding: 40rpx;
   box-shadow: 0 12rpx 40rpx rgba(90, 124, 154, 0.08),
@@ -457,6 +585,125 @@ defineExpose({
   margin-bottom: 32rpx;
   position: relative;
   z-index: 2;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 24rpx;
+  width: 100%;
+  max-width: 600rpx;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40rpx;
+  border-bottom: 1rpx solid #e8f0f5;
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #5a7c9a;
+}
+
+.modal-close {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 32rpx;
+}
+
+.modal-body {
+  padding: 40rpx;
+}
+
+.form-group {
+  margin-bottom: 40rpx;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 16rpx;
+  color: #5a7c9a;
+  font-weight: 600;
+  font-size: 30rpx;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0 32rpx;
+  height: 104rpx;
+  border: 2rpx solid #e8f0f5;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  background: #fafbfc;
+  color: #5a7c9a;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: #ffb3d9;
+  background: #fff;
+}
+
+.modal-footer {
+  padding: 40rpx;
+  border-top: 1rpx solid #e8f0f5;
+  display: flex;
+  gap: 24rpx;
+}
+
+.btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    border: none;
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+  color: #fff;
+  box-shadow: 0 8rpx 30rpx rgba(255, 154, 158, 0.3);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #fff;
+  box-shadow: 0 8rpx 30rpx rgba(168, 237, 234, 0.3);
 }
 
 .card-avatars {
@@ -569,23 +816,18 @@ defineExpose({
 }
 
 .card-action-icon {
-  width: 48rpx;
-  height: 48rpx;
+  width: 60rpx;
+  height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32rpx;
-  opacity: 0.6;
-  border-radius: 50%;
   transition: all 0.2s ease;
   position: relative;
 }
 
 .card-action-icon:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.5);
   transform: scale(1.1);
-  box-shadow: 0 4rpx 12rpx rgba(90, 124, 154, 0.1);
 }
 
 .card-action-icon:active {
