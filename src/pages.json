@@ -22,6 +22,15 @@
         "navigationStyle": "custom",
         "navigationBarTitleText": "鸽子的分账计算器"
       }
+    },
+    {
+      "path": "pages/imageCrop/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "图片裁剪",
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      }
     }
   ],
   "globalStyle": {
@@ -53,8 +62,12 @@
         "name": "鸽子的分账计算器",
         "path": "pages/gezi/index",
         "navigationStyle": "custom"
+      },
+      {
+        "path": "pages/imageCrop/index",
+        "navigationStyle": "custom",
+        "name": "图片裁剪"
       }
     ]
   }
 }
-
