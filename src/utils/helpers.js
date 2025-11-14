@@ -2,24 +2,25 @@
  * 工具函数
  */
 import { CONFIG } from './config.js'
+import dayjs from 'dayjs'
 
 /**
  * 获取上一个月
  * @returns {Object} { month: number, year: number }
  */
 export function getLastMonth() {
-  const now = new Date()
-  const currentMonth = now.getMonth() // 0-11
+  const now = dayjs()
+  const currentMonth = now.month() + 1 // dayjs month is 0-11, convert to 1-12
   let lastMonthValue
-  let year = now.getFullYear()
-  
-  if (currentMonth === 0) {
+  let year = now.year()
+
+  if (currentMonth === 1) {
     lastMonthValue = 12
     year = year - 1
   } else {
-    lastMonthValue = currentMonth
+    lastMonthValue = currentMonth - 1
   }
-  
+
   return { month: lastMonthValue, year }
 }
 
@@ -30,7 +31,7 @@ export function getLastMonth() {
  * @returns {number} 天数
  */
 export function getDaysInMonth(month, year) {
-  return new Date(year, month, 0).getDate()
+  return dayjs(`${year}-${month}`).daysInMonth()
 }
 
 /**

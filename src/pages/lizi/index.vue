@@ -4,7 +4,7 @@
     <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
     <view v-if="!isShareMode" class="header">
-      <text class="title">💧⚡🔥 水电燃气分账计算器</text>
+      <text class="title">💧⚡🔥 李子的分账计算器</text>
     </view>
 
     <view v-if="!isShareMode" class="form-container">
@@ -174,6 +174,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import dayjs from 'dayjs';
 import {
   getLastMonth,
   getDaysInMonth,
@@ -257,8 +258,8 @@ const onMonthChange = (e) => {
   formData.value.month = month;
   monthIndex.value = index;
 
-  const now = new Date();
-  const year = now.getFullYear();
+  const now = dayjs();
+  const year = now.year();
   const days = getDaysInMonth(month, year);
   formData.value.totalDays = days;
 
@@ -381,9 +382,9 @@ const toggleShareMode = () => {
 // 页面分享配置
 const onShareAppMessage = () => {
   return {
-    title: "分账计算器",
+    title: "李子的分账计算器",
     desc: "轻松计算水电燃气费用分摊，让合租生活更简单！",
-    path: "/pages/index/index",
+    path: "/pages/lizi/index",
     imageUrl: "", // 可以设置自定义分享图片
     success: function (res) {
       console.log("分享成功", res);
@@ -397,7 +398,7 @@ const onShareAppMessage = () => {
 // 分享到朋友圈
 const onShareTimeline = () => {
   return {
-    title: "水电燃气分账计算器 - 让合租生活更简单",
+    title: "李子的分账计算器 - 让合租生活更简单",
     query: "",
     imageUrl: "", // 可以设置自定义分享图片
     success: function (res) {
@@ -463,7 +464,6 @@ defineExpose({
   border-radius: 30rpx;
   padding: 40rpx;
   box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.1);
-  margin-bottom: 40rpx;
 }
 
 .form-group {
@@ -567,6 +567,7 @@ defineExpose({
 }
 
 .result {
+  margin-top: 80rpx;
   background: linear-gradient(135deg, #f5f7fa 0%, #fef5e7 100%);
   border-radius: 48rpx;
   padding: 24rpx 32rpx;
@@ -663,3 +664,4 @@ defineExpose({
   font-size: 44rpx;
 }
 </style>
+

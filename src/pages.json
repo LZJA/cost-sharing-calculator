@@ -1,16 +1,32 @@
 {
   "pages": [
     {
-      "path": "pages/index/index",
+      "path": "pages/home/home",
       "style": {
         "navigationStyle": "custom",
-        "navigationBarTitleText": ""
+        "navigationBarTitleText": "分账计算器",
+        "enableShareAppMessage": true,
+        "enableShareTimeline": true
+      }
+    },
+    {
+      "path": "pages/lizi/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "李子的分账计算器"
+      }
+    },
+    {
+      "path": "pages/gezi/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "鸽子的分账计算器"
       }
     }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "水电燃气分账计算器",
+    "navigationBarTitleText": "分账计算器",
     "navigationBarBackgroundColor": "#a8edea",
     "backgroundColor": "#f5f5f5"
   },
@@ -25,7 +41,17 @@
     "list": [
       {
         "name": "首页",
-        "path": "pages/index/index",
+        "path": "pages/home/home",
+        "navigationStyle": "custom"
+      },
+      {
+        "name": "李子的分账计算器",
+        "path": "pages/lizi/index",
+        "navigationStyle": "custom"
+      },
+      {
+        "name": "鸽子的分账计算器",
+        "path": "pages/gezi/index",
         "navigationStyle": "custom"
       }
     ]
