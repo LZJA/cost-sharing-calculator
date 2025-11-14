@@ -4,7 +4,7 @@
     <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
     <view v-if="!isShareMode" class="header">
-      <text class="title">💧⚡🔥 {{ pageTitle }}</text>
+      <text class="title">{{ pageTitle }}</text>
     </view>
 
     <view v-if="!isShareMode" class="form-container">
