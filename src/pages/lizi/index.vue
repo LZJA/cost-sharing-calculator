@@ -90,21 +90,12 @@
           placeholder="0"
           class="input"
           @input="handleOwnerDaysInput"
-          min="1"
+          min="0"
           step="1"
         />
         <text v-if="errors.ownerDays" class="error"
-          >⚠️ 房主居住天数必须为正整数且不能超过总天数</text
+          >⚠️ 房主居住天数必须为0至总天数之间的整数</text
         >
-        <text
-          v-if="
-            formData.ownerDays &&
-            (!Number.isInteger(formData.ownerDays) || formData.ownerDays <= 0)
-          "
-          class="error"
-        >
-          ⚠️ 房主居住天数必须为正整数
-        </text>
       </view>
 
       <view class="button-group">
@@ -137,7 +128,7 @@
       <view class="result-item">
         <text class="result-label">
           👤 房主应承担
-          <text v-if="formData.ownerDays" class="subnote"
+          <text v-if="hasOwnerDaysValue" class="subnote"
             >（居住{{ formData.ownerDays }}天）</text
           >
         </text>
@@ -221,6 +212,12 @@ const isShareMode = ref(false);
 
 // 状态栏高度
 const statusBarHeight = ref(0);
+
+// 房主天数展示判定
+const hasOwnerDaysValue = computed(() => {
+  const value = formData.value.ownerDays;
+  return value === 0 || !!value;
+});
 
 // 页面标题
 const pageTitle = ref("李子的分账计算器");

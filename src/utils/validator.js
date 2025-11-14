@@ -20,7 +20,7 @@ export function validateTotalDays(days) {
  * @returns {boolean} 是否有效
  */
 export function validateOwnerDays(ownerDays, totalDays) {
-  if (!Number.isInteger(ownerDays) || ownerDays <= 0) {
+  if (!Number.isInteger(ownerDays) || ownerDays < 0) {
     return false
   }
 
