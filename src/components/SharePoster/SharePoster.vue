@@ -61,6 +61,7 @@ const drawPoster = () => {
     electricBill,
     gasBill,
     ownerDays,
+    splitRule, // Add splitRule
     result,
   } = props.data;
 
@@ -97,7 +98,13 @@ const drawPoster = () => {
   ctx.setFontSize(18);
   ctx.setFillStyle("#3e627f");
   ctx.setTextAlign("left");
-  ctx.fillText(`${month}月账单（共${totalDays}天）`, leftX, y);
+
+  // Gezi page doesn't have month/totalDays, uses "本次账单"
+  if (splitRule) {
+    ctx.fillText("本次账单：", leftX, y);
+  } else {
+    ctx.fillText(`${month}月账单（共${totalDays}天）`, leftX, y);
+  }
 
   y += lineHeight + 10;
 
@@ -115,9 +122,9 @@ const drawPoster = () => {
     y += lineHeight;
   };
 
-  drawRow("💧 水费", `${waterBill} 元`);
-  drawRow("⚡ 电费", `${electricBill} 元`);
-  drawRow("🔥 燃气费", `${gasBill} 元`);
+  drawRow("💧 水费", `${waterBill || 0} 元`);
+  drawRow("⚡ 电费", `${electricBill || 0} 元`);
+  drawRow("🔥 燃气费", `${gasBill || 0} 元`);
 
   // Divider
   y -= 10;
@@ -132,26 +139,55 @@ const drawPoster = () => {
 
   // Result
   drawRow("💵 总费用", `${result.totalAmount} 元`, "#ff6b9d", true);
-  drawRow(`👤 房主 (${ownerDays}天)`, `${result.ownerAmount} 元`);
-  drawRow("📊 剩余费用", `${result.remainingAmount} 元`);
 
-  y += 10;
+  if (!splitRule) {
+    // Lizi Page Logic
+    drawRow(`👤 房主 (${ownerDays}天)`, `${result.ownerAmount} 元`);
+    drawRow("📊 剩余费用", `${result.remainingAmount} 元`);
 
-  // Draw background box for "分摊结果" section
-  const boxStartY = y - 30;
-  const boxHeight = lineHeight * 3 + 20; // Title + 2 rows + padding
-  ctx.setFillStyle("#fff5f5"); // Light pink background
-  roundRect(ctx, leftX - 10, boxStartY, rightX - leftX + 20, boxHeight, 8);
-  ctx.fill();
+    y += 10;
 
-  ctx.setFontSize(14);
-  ctx.setFillStyle("#3e627f");
-  ctx.setTextAlign("left");
-  ctx.fillText("💫 分摊结果：", leftX, y);
-  y += lineHeight;
+    // Draw background box for "分摊结果" section
+    const boxStartY = y - 30;
+    const boxHeight = lineHeight * 3 + 20; // Title + 2 rows + padding
+    ctx.setFillStyle("#fff5f5"); // Light pink background
+    roundRect(ctx, leftX - 10, boxStartY, rightX - leftX + 20, boxHeight, 8);
+    ctx.fill();
 
-  drawRow("🌸 谢林珠", `${result.sisterAmount} 元`, "#5a7c9a", true);
-  drawRow("🌻 张锦豪", `${result.datouAmount} 元`, "#5a7c9a", true);
+    ctx.setFontSize(14);
+    ctx.setFillStyle("#3e627f");
+    ctx.setTextAlign("left");
+    ctx.fillText("💫 分摊结果：", leftX, y);
+    y += lineHeight;
+
+    drawRow("🌸 谢林珠", `${result.sisterAmount} 元`, "#5a7c9a", true);
+    drawRow("🌻 张锦豪", `${result.datouAmount} 元`, "#5a7c9a", true);
+  } else {
+    // Gezi Page Logic
+    if (splitRule === "普通分账") {
+      drawRow("🌸 人均费用", `${result.chunfengAmount} 元`, "#ff6b9d", true);
+    } else if (splitRule === "特殊分账") {
+      y += 10;
+
+      // Draw background box for "分摊结果" section
+      const boxStartY = y - 30;
+      const boxHeight = lineHeight * 5 + 20; // Title + 4 rows + padding
+      ctx.setFillStyle("#e8f5f8"); // Light blue background for Gezi page
+      roundRect(ctx, leftX - 10, boxStartY, rightX - leftX + 20, boxHeight, 8);
+      ctx.fill();
+
+      ctx.setFontSize(14);
+      ctx.setFillStyle("#3e627f");
+      ctx.setTextAlign("left");
+      ctx.fillText("💫 费用分摊明细：", leftX, y);
+      y += lineHeight;
+
+      drawRow("🍐 李子应承担", `${result.liziAmount} 元`, "#5a7c9a", true);
+      drawRow("🕊️ 鸽子应承担", `${result.geziAmount} 元`, "#5a7c9a", true);
+      drawRow("🌸 春风应承担", `${result.chunfengAmount} 元`, "#5a7c9a", true);
+      drawRow("🍊 橙子应承担", `${result.chengziAmount} 元`, "#5a7c9a", true);
+    }
+  }
 
   // Footer
   ctx.setFontSize(12);

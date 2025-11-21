@@ -130,13 +130,27 @@
           >
         </view>
       </view>
+
+      <view class="action-buttons">
+        <button class="btn btn-primary" @click="generatePoster">
+          🖼️ 生成分享海报
+        </button>
+      </view>
     </view>
+
+    <!-- 分享海报组件 -->
+    <SharePoster
+      ref="sharePosterRef"
+      :data="posterData"
+      @close="onPosterClose"
+    />
   </view>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { formatAmount } from "@/utils/helpers.js";
+import SharePoster from "@/components/SharePoster/SharePoster.vue";
 
 // 分账规则选项
 const splitRuleOptions = ["普通分账", "特殊分账"];
@@ -382,6 +396,26 @@ defineExpose({
   onShareAppMessage,
   onShareTimeline,
 });
+
+// 海报相关
+const sharePosterRef = ref(null);
+const posterData = computed(() => ({
+  ...formData.value,
+  result: Object.fromEntries(
+    Object.entries(result.value).map(([key, value]) => [
+      key,
+      formatAmount(value),
+    ])
+  ),
+}));
+
+const generatePoster = () => {
+  sharePosterRef.value.show();
+};
+
+const onPosterClose = () => {
+  // 处理关闭事件 if needed
+};
 </script>
 
 <style lang="scss" scoped>
@@ -613,5 +647,9 @@ defineExpose({
 .result-value.highlight {
   color: #ff6b9d;
   font-size: 44rpx;
+}
+
+.action-buttons {
+  margin-top: 40rpx;
 }
 </style>
