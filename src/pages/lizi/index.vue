@@ -426,7 +426,6 @@ const onShareTimeline = () => {
 
 // 页面加载时初始化
 onMounted(() => {
-  generatePoster();
   setTimeout(() => {
     initMonth();
   }, 100);
