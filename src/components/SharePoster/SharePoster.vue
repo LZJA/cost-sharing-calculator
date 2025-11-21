@@ -2,14 +2,12 @@
   <view class="share-poster-container" v-if="visible">
     <view class="mask" @click="close"></view>
     <view class="content">
-      <view class="canvas-content">
-        <canvas
-          canvas-id="shareCanvas"
-          id="shareCanvas"
-          class="canvas"
-          :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
-        ></canvas>
-      </view>
+      <canvas
+        canvas-id="shareCanvas"
+        id="shareCanvas"
+        class="canvas"
+        :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
+      ></canvas>
       <view class="btn-group">
         <button class="btn save-btn" @click="saveImage">保存到相册</button>
         <button class="btn share-btn" @click="shareToWeChat">分享好友</button>
@@ -257,7 +255,6 @@ const shareToWeChat = () => {
     });
     return;
   }
-
   // 使用 wx.showShareImageMenu 直接分享图片
   // 这个 API 会唤起分享菜单，用户可以选择发送给朋友
   // 发送出去的是图片预览形式，而不是文件
@@ -309,15 +306,10 @@ defineExpose({
 
 .content {
   position: relative;
-  z-index: 1000;
+  z-index: 88;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.canvas-content {
-  border-radius: 32rpx;
-  overflow: hidden;
 }
 
 .canvas {
