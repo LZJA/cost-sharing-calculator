@@ -159,7 +159,20 @@
           >
         </view>
       </view>
+
+      <view class="action-buttons">
+        <button class="btn btn-primary" @click="generatePoster">
+          🖼️ 生成分享海报
+        </button>
+      </view>
     </view>
+
+    <!-- 分享海报组件 -->
+    <SharePoster
+      ref="sharePosterRef"
+      :data="posterData"
+      @close="onPosterClose"
+    />
   </view>
 </template>
 
@@ -174,6 +187,7 @@ import {
 } from "@/utils/helpers.js";
 import { calculateCostSharing } from "@/utils/calculator.js";
 import { validateTotalDays, validateOwnerDays } from "@/utils/validator.js";
+import SharePoster from "@/components/SharePoster/SharePoster.vue";
 
 // 月份选项
 const monthOptions = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
@@ -412,6 +426,7 @@ const onShareTimeline = () => {
 
 // 页面加载时初始化
 onMounted(() => {
+  generatePoster();
   setTimeout(() => {
     initMonth();
   }, 100);
@@ -441,6 +456,26 @@ defineExpose({
   onShareAppMessage,
   onShareTimeline,
 });
+
+// 海报相关
+const sharePosterRef = ref(null);
+const posterData = computed(() => ({
+  ...formData.value,
+  result: Object.fromEntries(
+    Object.entries(result.value).map(([key, value]) => [
+      key,
+      formatAmount(value),
+    ])
+  ),
+}));
+
+const generatePoster = () => {
+  sharePosterRef.value.show();
+};
+
+const onPosterClose = () => {
+  // 处理关闭事件 if needed
+};
 </script>
 
 <style lang="scss" scoped>
@@ -672,5 +707,9 @@ defineExpose({
 .result-value.highlight {
   color: #ff6b9d;
   font-size: 44rpx;
+}
+
+.action-buttons {
+  margin-top: 40rpx;
 }
 </style>
