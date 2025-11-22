@@ -1,5 +1,5 @@
 <template>
-  <view class="share-poster-container" v-if="visible">
+  <view class="share-poster-container" v-if="visible" @touchmove.stop.prevent>
     <view class="mask" @click="close"></view>
     <view class="content">
       <canvas
@@ -260,6 +260,7 @@ const shareToWeChat = () => {
   // 发送出去的是图片预览形式，而不是文件
   wx.showShareImageMenu({
     path: tempFilePath.value,
+    needShowEntrance: false,
     success: () => {
       close();
     },
@@ -310,11 +311,6 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.canvas {
-  background: #fff;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
 }
 
 .btn-group {
