@@ -26,3 +26,6 @@ Thumbs.db
 # Application
 application-local.yml
 application-prod.yml
+
+# Docker
+*.log
