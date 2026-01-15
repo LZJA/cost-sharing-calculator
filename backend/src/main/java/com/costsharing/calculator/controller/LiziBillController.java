@@ -7,6 +7,7 @@ import com.costsharing.calculator.service.LiziBillService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,42 +38,19 @@ public class LiziBillController {
     }
 
     /**
-     * 获取指定月份的账单
-     */
-    @GetMapping("/{year}/{month}")
-    public ApiResponse<LiziBill> getBillByMonthAndYear(
-            @PathVariable Integer year,
-            @PathVariable Integer month) {
-        return billService.getBillByMonthAndYear(month, year)
-                .map(ApiResponse::success)
-                .orElse(ApiResponse.error("账单不存在"));
-    }
-
-    /**
-     * 获取指定年份的所有账单
-     */
-    @GetMapping("/year/{year}")
-    public ApiResponse<List<LiziBill>> getBillsByYear(@PathVariable Integer year) {
-        List<LiziBill> bills = billService.getBillsByYear(year);
-        return ApiResponse.success(bills);
-    }
-
-    /**
-     * 获取最近的账单
-     */
-    @GetMapping("/recent")
-    public ApiResponse<List<LiziBill>> getRecentBills(
-            @RequestParam(defaultValue = "10") int limit) {
-        List<LiziBill> bills = billService.getRecentBills(limit);
-        return ApiResponse.success(bills);
-    }
-
-    /**
-     * 获取所有账单
+     * 分页查询账单列表
+     * @param year 年份（可选）
+     * @param month 月份（可选）
+     * @param page 页码（从0开始，默认0）
+     * @param size 每页大小（默认10）
      */
     @GetMapping
-    public ApiResponse<List<LiziBill>> getAllBills() {
-        List<LiziBill> bills = billService.getAllBills();
+    public ApiResponse<Page<LiziBill>> getBillsPage(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<LiziBill> bills = billService.getBillsPage(year, month, page, size);
         return ApiResponse.success(bills);
     }
 

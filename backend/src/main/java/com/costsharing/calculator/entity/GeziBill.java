@@ -48,6 +48,18 @@ public class GeziBill {
     private String splitRule;
 
     /**
+     * 年份
+     */
+    @Column
+    private Integer year;
+
+    /**
+     * 月份
+     */
+    @Column
+    private Integer month;
+
+    /**
      * 总费用
      */
     @Column(nullable = false, precision = 10, scale = 2)

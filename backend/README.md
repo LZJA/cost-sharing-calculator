@@ -62,7 +62,7 @@ backend/
 mysql -u root -p < src/main/resources/schema.sql
 ```
 
-或手动在MySQL中执行：
+或手动在 MySQL 中执行：
 
 ```sql
 CREATE DATABASE IF NOT EXISTS cost_sharing_db
@@ -81,7 +81,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/cost_sharing_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: your_password_here  # 修改为你的MySQL密码
+    password: your_password_here # 修改为你的MySQL密码
 ```
 
 ### 4. 编译项目
@@ -97,7 +97,7 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-或者运行打包后的jar：
+或者运行打包后的 jar：
 
 ```bash
 java -jar target/cost-sharing-backend-1.0.0.jar
@@ -128,6 +128,7 @@ GET /api/cards
 ```
 
 **响应示例：**
+
 ```json
 {
   "code": 200,
@@ -155,6 +156,7 @@ GET /api/cards/{type}
 ```
 
 **参数：**
+
 - `type`: 卡片类型（lizi 或 gezi）
 
 #### 3. 保存或更新卡片
@@ -165,6 +167,7 @@ Content-Type: application/json
 ```
 
 **请求体：**
+
 ```json
 {
   "type": "lizi",
@@ -186,12 +189,13 @@ Content-Type: application/json
 ```
 
 **请求体：**
+
 ```json
 {
   "month": 1,
   "year": 2024,
   "totalDays": 31,
-  "waterBill": 100.50,
+  "waterBill": 100.5,
   "electricBill": 200.75,
   "gasBill": 80.25,
   "ownerDays": 15
@@ -199,6 +203,7 @@ Content-Type: application/json
 ```
 
 **响应示例：**
+
 ```json
 {
   "code": 200,
@@ -208,11 +213,11 @@ Content-Type: application/json
     "month": 1,
     "year": 2024,
     "totalDays": 31,
-    "waterBill": 100.50,
+    "waterBill": 100.5,
     "electricBill": 200.75,
     "gasBill": 80.25,
     "ownerDays": 15,
-    "totalAmount": 381.50,
+    "totalAmount": 381.5,
     "ownerAmount": 92.42,
     "remainingAmount": 289.08,
     "sisterAmount": 144.54,
@@ -222,31 +227,62 @@ Content-Type: application/json
 }
 ```
 
-#### 2. 获取指定月份的账单
+#### 2. 分页查询账单列表
 
 ```
-GET /api/lizi-bills/{year}/{month}
+GET /api/lizi-bills?page=0&size=10&year=2024&month=1
 ```
 
-#### 3. 获取指定年份的所有账单
+**查询参数：**
 
-```
-GET /api/lizi-bills/year/{year}
+- `page`: 页码（从 0 开始，默认 0）
+- `size`: 每页大小（默认 10）
+- `year`: 年份（可选，用于筛选）
+- `month`: 月份（可选，1-12，用于筛选）
+
+**响应示例：**
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "month": 1,
+        "year": 2024,
+        "totalDays": 31,
+        "waterBill": 100.5,
+        "electricBill": 200.75,
+        "gasBill": 80.25,
+        "ownerDays": 15,
+        "totalAmount": 381.5,
+        "ownerAmount": 92.42,
+        "remainingAmount": 289.08,
+        "sisterAmount": 144.54,
+        "datouAmount": 144.54,
+        "createdAt": "2024-01-01T10:00:00"
+      }
+    ],
+    "totalElements": 100,
+    "totalPages": 10,
+    "size": 10,
+    "number": 0,
+    "first": true,
+    "last": false,
+    "empty": false
+  }
+}
 ```
 
-#### 4. 获取最近的账单
+**使用示例：**
 
-```
-GET /api/lizi-bills/recent?limit=10
-```
+- 获取所有账单第一页：`GET /api/lizi-bills?page=0&size=10`
+- 获取 2024 年的账单：`GET /api/lizi-bills?year=2024&page=0&size=10`
+- 获取 2024 年 1 月的账单：`GET /api/lizi-bills?year=2024&month=1&page=0&size=10`
 
-#### 5. 获取所有账单
-
-```
-GET /api/lizi-bills
-```
-
-#### 6. 删除账单
+#### 3. 删除账单
 
 ```
 DELETE /api/lizi-bills/{id}
@@ -262,27 +298,33 @@ Content-Type: application/json
 ```
 
 **请求体：**
+
 ```json
 {
-  "waterBill": 100.00,
-  "electricBill": 200.00,
-  "gasBill": 80.00,
-  "splitRule": "普通分账"
+  "waterBill": 100.0,
+  "electricBill": 200.0,
+  "gasBill": 80.0,
+  "splitRule": "普通分账",
+  "year": 2024,
+  "month": 1
 }
 ```
 
 **响应示例：**
+
 ```json
 {
   "code": 200,
   "message": "success",
   "data": {
     "id": 1,
-    "waterBill": 100.00,
-    "electricBill": 200.00,
-    "gasBill": 80.00,
+    "waterBill": 100.0,
+    "electricBill": 200.0,
+    "gasBill": 80.0,
     "splitRule": "普通分账",
-    "totalAmount": 380.00,
+    "year": 2024,
+    "month": 1,
+    "totalAmount": 380.0,
     "liziAmount": 78.33,
     "geziAmount": 78.33,
     "chunfengAmount": 111.67,
@@ -292,19 +334,26 @@ Content-Type: application/json
 }
 ```
 
-#### 2. 获取最近的账单
+#### 2. 分页查询账单列表
 
 ```
-GET /api/gezi-bills/recent?limit=10
+GET /api/gezi-bills?page=0&size=10&year=2024&month=1
 ```
 
-#### 3. 获取所有账单
+**查询参数：**
 
-```
-GET /api/gezi-bills
-```
+- `page`: 页码（从 0 开始，默认 0）
+- `size`: 每页大小（默认 10）
+- `year`: 年份（可选，用于筛选）
+- `month`: 月份（可选，1-12，用于筛选）
 
-#### 4. 删除账单
+**使用示例：**
+
+- 获取所有账单第一页：`GET /api/gezi-bills?page=0&size=10`
+- 获取 2024 年的账单：`GET /api/gezi-bills?year=2024&page=0&size=10`
+- 获取 2024 年 1 月的账单：`GET /api/gezi-bills?year=2024&month=1&page=0&size=10`
+
+#### 3. 删除账单
 
 ```
 DELETE /api/gezi-bills/{id}
@@ -314,52 +363,54 @@ DELETE /api/gezi-bills/{id}
 
 ### cards - 卡片配置表
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGINT | 主键ID |
-| type | VARCHAR(10) | 卡片类型（lizi/gezi） |
-| name | VARCHAR(100) | 卡片名称 |
-| description | VARCHAR(200) | 描述语 |
-| avatar | VARCHAR(10) | 头像（emoji） |
-| background | VARCHAR(500) | 背景图片路径 |
-| enable_background | BOOLEAN | 是否启用背景图 |
-| created_at | TIMESTAMP | 创建时间 |
-| updated_at | TIMESTAMP | 更新时间 |
+| 字段              | 类型         | 说明                  |
+| ----------------- | ------------ | --------------------- |
+| id                | BIGINT       | 主键 ID               |
+| type              | VARCHAR(10)  | 卡片类型（lizi/gezi） |
+| name              | VARCHAR(100) | 卡片名称              |
+| description       | VARCHAR(200) | 描述语                |
+| avatar            | VARCHAR(10)  | 头像（emoji）         |
+| background        | VARCHAR(500) | 背景图片路径          |
+| enable_background | BOOLEAN      | 是否启用背景图        |
+| created_at        | TIMESTAMP    | 创建时间              |
+| updated_at        | TIMESTAMP    | 更新时间              |
 
 ### lizi_bills - 李子账单表
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGINT | 主键ID |
-| month | INT | 月份 (1-12) |
-| year | INT | 年份 |
-| total_days | INT | 月份总天数 |
-| water_bill | DECIMAL(10,2) | 水费 |
-| electric_bill | DECIMAL(10,2) | 电费 |
-| gas_bill | DECIMAL(10,2) | 燃气费 |
-| owner_days | INT | 房主居住天数 |
-| total_amount | DECIMAL(10,2) | 总费用 |
-| owner_amount | DECIMAL(10,2) | 房主应承担费用 |
-| remaining_amount | DECIMAL(10,2) | 剩余费用 |
-| sister_amount | DECIMAL(10,2) | 谢林珠应承担费用 |
-| datou_amount | DECIMAL(10,2) | 张锦豪应承担费用 |
-| created_at | TIMESTAMP | 创建时间 |
+| 字段             | 类型          | 说明             |
+| ---------------- | ------------- | ---------------- |
+| id               | BIGINT        | 主键 ID          |
+| month            | INT           | 月份 (1-12)      |
+| year             | INT           | 年份             |
+| total_days       | INT           | 月份总天数       |
+| water_bill       | DECIMAL(10,2) | 水费             |
+| electric_bill    | DECIMAL(10,2) | 电费             |
+| gas_bill         | DECIMAL(10,2) | 燃气费           |
+| owner_days       | INT           | 房主居住天数     |
+| total_amount     | DECIMAL(10,2) | 总费用           |
+| owner_amount     | DECIMAL(10,2) | 房主应承担费用   |
+| remaining_amount | DECIMAL(10,2) | 剩余费用         |
+| sister_amount    | DECIMAL(10,2) | 谢林珠应承担费用 |
+| datou_amount     | DECIMAL(10,2) | 张锦豪应承担费用 |
+| created_at       | TIMESTAMP     | 创建时间         |
 
 ### gezi_bills - 鸽子账单表
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGINT | 主键ID |
-| water_bill | DECIMAL(10,2) | 水费 |
-| electric_bill | DECIMAL(10,2) | 电费 |
-| gas_bill | DECIMAL(10,2) | 燃气费 |
-| split_rule | VARCHAR(20) | 分账规则 |
-| total_amount | DECIMAL(10,2) | 总费用 |
-| lizi_amount | DECIMAL(10,2) | 李子应承担费用 |
-| gezi_amount | DECIMAL(10,2) | 鸽子应承担费用 |
+| 字段            | 类型          | 说明           |
+| --------------- | ------------- | -------------- |
+| id              | BIGINT        | 主键 ID        |
+| water_bill      | DECIMAL(10,2) | 水费           |
+| electric_bill   | DECIMAL(10,2) | 电费           |
+| gas_bill        | DECIMAL(10,2) | 燃气费         |
+| split_rule      | VARCHAR(20)   | 分账规则       |
+| year            | INT           | 年份           |
+| month           | INT           | 月份 (1-12)    |
+| total_amount    | DECIMAL(10,2) | 总费用         |
+| lizi_amount     | DECIMAL(10,2) | 李子应承担费用 |
+| gezi_amount     | DECIMAL(10,2) | 鸽子应承担费用 |
 | chunfeng_amount | DECIMAL(10,2) | 春风应承担费用 |
-| chengzi_amount | DECIMAL(10,2) | 橙子应承担费用 |
-| created_at | TIMESTAMP | 创建时间 |
+| chengzi_amount  | DECIMAL(10,2) | 橙子应承担费用 |
+| created_at      | TIMESTAMP     | 创建时间       |
 
 ## 常见问题
 
@@ -377,7 +428,7 @@ DELETE /api/gezi-bills/{id}
 
 ## 开发建议
 
-1. 使用IDE（IntelliJ IDEA 推荐）导入 Maven 项目
+1. 使用 IDE（IntelliJ IDEA 推荐）导入 Maven 项目
 2. 启用 Lombok 插件
 3. 使用 Postman 或类似工具测试 API
 4. 查看日志文件排查问题

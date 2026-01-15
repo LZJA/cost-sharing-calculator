@@ -31,4 +31,8 @@ public class GeziBillRequest {
 
     @NotBlank(message = "分账规则不能为空")
     private String splitRule;
+
+    private Integer year;
+
+    private Integer month;
 }

@@ -151,6 +151,7 @@
 import { ref, computed, onMounted } from "vue";
 import { formatAmount } from "@/utils/helpers.js";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
+import api from "@/api/costSharingApi.js";
 
 // 分账规则选项
 const splitRuleOptions = ["普通分账", "特殊分账"];
@@ -250,7 +251,7 @@ const fixMoneyOnBlur = (field) => {
 };
 
 // 计算费用
-const calculateBill = () => {
+const calculateBill = async () => {
   // 验证表单
   if (!formData.value.splitRule) {
     showResult.value = false;
@@ -315,6 +316,25 @@ const calculateBill = () => {
     chengziAmount,
   };
   showResult.value = true;
+
+  // 保存账单到后端
+  try {
+    const now = new Date();
+    const billData = {
+      waterBill: waterBill,
+      electricBill: electricBill,
+      gasBill: gasBill,
+      splitRule: formData.value.splitRule,
+      year: now.getFullYear(),
+      month: now.getMonth() + 1
+    };
+
+    await api.geziBill.save(billData);
+    console.log('账单已保存到服务器');
+  } catch (error) {
+    console.error('保存账单失败:', error);
+    // 不影响用户继续使用，只记录错误
+  }
 };
 
 // 重置表单
@@ -369,7 +389,7 @@ const onShareTimeline = () => {
 };
 
 // 页面加载时初始化
-onMounted(() => {
+onMounted(async () => {
   // 获取系统信息，设置状态栏高度
   uni.getSystemInfo({
     success: (res) => {
@@ -380,14 +400,23 @@ onMounted(() => {
     },
   });
 
-  // 从存储中加载页面标题
+  // 从 API 加载卡片数据以获取页面标题
   try {
-    const geziCard = uni.getStorageSync("gezi_card");
+    const geziCard = await api.card.getByType('gezi');
     if (geziCard && geziCard.name) {
       pageTitle.value = geziCard.name;
     }
   } catch (e) {
-    console.error("加载页面标题失败", e);
+    console.error("从API加载页面标题失败", e);
+    // 如果API加载失败，尝试从本地存储加载作为备用方案
+    try {
+      const geziCard = uni.getStorageSync("gezi_card");
+      if (geziCard && geziCard.name) {
+        pageTitle.value = geziCard.name;
+      }
+    } catch (localErr) {
+      console.error("从本地存储加载页面标题也失败", localErr);
+    }
   }
 });
 

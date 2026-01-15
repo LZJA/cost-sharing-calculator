@@ -188,6 +188,7 @@ import {
 import { calculateCostSharing } from "@/utils/calculator.js";
 import { validateTotalDays, validateOwnerDays } from "@/utils/validator.js";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
+import api from "@/api/costSharingApi.js";
 
 // 月份选项
 const monthOptions = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
@@ -335,7 +336,7 @@ const fixMoneyOnBlur = (field) => {
 };
 
 // 计算费用
-const calculateBill = () => {
+const calculateBill = async () => {
   // 验证表单
   const totalDays = Number(formData.value.totalDays);
   const ownerDays = Number(formData.value.ownerDays);
@@ -365,6 +366,26 @@ const calculateBill = () => {
   const calculated = calculateCostSharing(calculationData);
   result.value = calculated;
   showResult.value = true;
+
+  // 保存账单到后端
+  try {
+    const now = dayjs();
+    const billData = {
+      month: parseInt(formData.value.month, 10),
+      year: formData.value.year || now.year(),
+      totalDays: totalDays,
+      waterBill: parseFloat(formData.value.waterBill) || 0,
+      electricBill: parseFloat(formData.value.electricBill) || 0,
+      gasBill: parseFloat(formData.value.gasBill) || 0,
+      ownerDays: ownerDays,
+    };
+
+    await api.liziBill.save(billData);
+    console.log('账单已保存到服务器');
+  } catch (error) {
+    console.error('保存账单失败:', error);
+    // 不影响用户继续使用，只记录错误
+  }
 };
 
 // 重置表单
@@ -425,7 +446,7 @@ const onShareTimeline = () => {
 };
 
 // 页面加载时初始化
-onMounted(() => {
+onMounted(async () => {
   setTimeout(() => {
     initMonth();
   }, 100);
@@ -439,14 +460,23 @@ onMounted(() => {
     },
   });
 
-  // 从存储中加载页面标题
+  // 从 API 加载卡片数据以获取页面标题
   try {
-    const liziCard = uni.getStorageSync("lizi_card");
+    const liziCard = await api.card.getByType('lizi');
     if (liziCard && liziCard.name) {
       pageTitle.value = liziCard.name;
     }
   } catch (e) {
-    console.error("加载页面标题失败", e);
+    console.error("从API加载页面标题失败", e);
+    // 如果API加载失败，尝试从本地存储加载作为备用方案
+    try {
+      const liziCard = uni.getStorageSync("lizi_card");
+      if (liziCard && liziCard.name) {
+        pageTitle.value = liziCard.name;
+      }
+    } catch (localErr) {
+      console.error("从本地存储加载页面标题也失败", localErr);
+    }
   }
 });
 

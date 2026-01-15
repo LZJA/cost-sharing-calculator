@@ -176,6 +176,7 @@
 
 <script setup>
 import { ref, onMounted, getCurrentInstance } from "vue";
+import api from "@/api/costSharingApi.js";
 
 // 状态栏高度
 const statusBarHeight = ref(0);
@@ -257,7 +258,7 @@ const toggleBackground = () => {
 };
 
 // 保存卡片编辑
-const saveCardEdit = () => {
+const saveCardEdit = async () => {
   if (!editingCard.value.name || !editingCard.value.description) {
     uni.showToast({
       title: "请填写完整信息",
@@ -266,22 +267,36 @@ const saveCardEdit = () => {
     return;
   }
 
-  if (editingCardType.value === "lizi") {
-    liziCard.value = { ...editingCard.value };
-    // 保存到本地存储
-    uni.setStorageSync("lizi_card", liziCard.value);
-  } else if (editingCardType.value === "gezi") {
-    geziCard.value = { ...editingCard.value };
-    // 保存到本地存储
-    uni.setStorageSync("gezi_card", geziCard.value);
+  try {
+    // 准备保存的数据，添加 type 字段
+    const cardData = {
+      ...editingCard.value,
+      type: editingCardType.value
+    };
+
+    // 调用 API 保存卡片数据
+    const savedCard = await api.card.save(cardData);
+
+    // 更新本地显示数据
+    if (editingCardType.value === "lizi") {
+      liziCard.value = { ...editingCard.value };
+    } else if (editingCardType.value === "gezi") {
+      geziCard.value = { ...editingCard.value };
+    }
+
+    uni.showToast({
+      title: "保存成功",
+      icon: "success",
+    });
+
+    closeEditModal();
+  } catch (error) {
+    console.error("保存卡片失败", error);
+    uni.showToast({
+      title: "保存失败，请重试",
+      icon: "none",
+    });
   }
-
-  uni.showToast({
-    title: "保存成功",
-    icon: "success",
-  });
-
-  closeEditModal();
 };
 
 // 编辑李子卡片背景
@@ -386,71 +401,97 @@ const cropImage = (imagePath, cardType) => {
 };
 
 // 设置卡片背景
-const setCardBackground = (imagePath, cardType) => {
-  // 更新卡片对象中的背景图片
-  if (cardType === "lizi") {
-    liziCard.value.background = imagePath;
-    // 保存整个卡片对象到本地存储
-    uni.setStorageSync("lizi_card", liziCard.value);
-  } else if (cardType === "gezi") {
-    geziCard.value.background = imagePath;
-    // 保存整个卡片对象到本地存储
-    uni.setStorageSync("gezi_card", geziCard.value);
-  }
+const setCardBackground = async (imagePath, cardType) => {
+  try {
+    // 更新卡片对象中的背景图片
+    if (cardType === "lizi") {
+      liziCard.value.background = imagePath;
+      // 调用 API 保存卡片数据
+      await api.card.save({
+        ...liziCard.value,
+        type: "lizi"
+      });
+    } else if (cardType === "gezi") {
+      geziCard.value.background = imagePath;
+      // 调用 API 保存卡片数据
+      await api.card.save({
+        ...geziCard.value,
+        type: "gezi"
+      });
+    }
 
-  uni.showToast({
-    title: "背景设置成功",
-    icon: "success",
-  });
+    uni.showToast({
+      title: "背景设置成功",
+      icon: "success",
+    });
+  } catch (error) {
+    console.error("设置背景失败", error);
+    uni.showToast({
+      title: "设置背景失败，请重试",
+      icon: "none",
+    });
+  }
 };
 
 // 加载卡片数据
-const loadCardData = () => {
+const loadCardData = async () => {
   try {
-    // 加载李子卡片数据
-    const liziData = uni.getStorageSync("lizi_card");
+    // 从 API 加载所有卡片数据
+    const cards = await api.card.getAll();
+
+    // 查找李子和鸽子的卡片
+    const liziData = cards.find(card => card.type === 'lizi');
+    const geziData = cards.find(card => card.type === 'gezi');
+
+    // 更新李子卡片数据
     if (liziData) {
       liziCard.value = {
         ...liziCard.value,
         ...liziData,
-        // 确保enableBackground字段有默认值
-        enableBackground:
-          liziData.enableBackground !== undefined
-            ? liziData.enableBackground
-            : false,
+        enableBackground: liziData.enableBackground !== undefined
+          ? liziData.enableBackground
+          : false,
       };
     }
 
-    // 加载鸽子卡片数据
-    const geziData = uni.getStorageSync("gezi_card");
+    // 更新鸽子卡片数据
     if (geziData) {
       geziCard.value = {
         ...geziCard.value,
         ...geziData,
-        // 确保enableBackground字段有默认值
-        enableBackground:
-          geziData.enableBackground !== undefined
-            ? geziData.enableBackground
-            : false,
+        enableBackground: geziData.enableBackground !== undefined
+          ? geziData.enableBackground
+          : false,
       };
-    }
-
-    // 兼容旧版本数据
-    const oldLiziBackground = uni.getStorageSync("lizi_background");
-    if (oldLiziBackground && !liziCard.value.background) {
-      liziCard.value.background = oldLiziBackground;
-      // 如果有旧背景图，默认启用
-      liziCard.value.enableBackground = true;
-    }
-
-    const oldGeziBackground = uni.getStorageSync("gezi_background");
-    if (oldGeziBackground && !geziCard.value.background) {
-      geziCard.value.background = oldGeziBackground;
-      // 如果有旧背景图，默认启用
-      geziCard.value.enableBackground = true;
     }
   } catch (e) {
     console.error("加载卡片数据失败", e);
+    // 如果API加载失败，尝试从本地存储加载作为备用方案
+    try {
+      const liziData = uni.getStorageSync("lizi_card");
+      if (liziData) {
+        liziCard.value = {
+          ...liziCard.value,
+          ...liziData,
+          enableBackground: liziData.enableBackground !== undefined
+            ? liziData.enableBackground
+            : false,
+        };
+      }
+
+      const geziData = uni.getStorageSync("gezi_card");
+      if (geziData) {
+        geziCard.value = {
+          ...geziCard.value,
+          ...geziData,
+          enableBackground: geziData.enableBackground !== undefined
+            ? geziData.enableBackground
+            : false,
+        };
+      }
+    } catch (localErr) {
+      console.error("从本地存储加载卡片数据也失败", localErr);
+    }
   }
 };
 

@@ -5,7 +5,9 @@ import com.costsharing.calculator.entity.LiziBill;
 import com.costsharing.calculator.repository.LiziBillRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,34 +71,24 @@ public class LiziBillService {
     }
 
     /**
-     * 获取指定月份的账单
-     */
-    public Optional<LiziBill> getBillByMonthAndYear(Integer month, Integer year) {
-        return billRepository.findByMonthAndYear(month, year);
-    }
-
-    /**
-     * 获取指定年份的所有账单
-     */
-    public List<LiziBill> getBillsByYear(Integer year) {
-        return billRepository.findByYearOrderByMonthDesc(year);
-    }
-
-    /**
-     * 获取最近的账单
-     */
-    public List<LiziBill> getRecentBills(int limit) {
-        return billRepository.findRecentBills()
-                .stream()
-                .limit(limit)
-                .toList();
-    }
-
-    /**
      * 获取所有账单
      */
     public List<LiziBill> getAllBills() {
         return billRepository.findAll();
+    }
+
+    /**
+     * 分页查询账单列表（支持按年份和月份过滤）
+     *
+     * @param year 年份（可选）
+     * @param month 月份（可选）
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @return 分页结果
+     */
+    public Page<LiziBill> getBillsPage(Integer year, Integer month, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return billRepository.findByYearAndMonth(year, month, pageable);
     }
 
     /**

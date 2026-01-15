@@ -70,18 +70,26 @@ export default {
   // 李子账单相关
   liziBill: {
     save: (data) => request('/lizi-bills', 'POST', data),
-    getByMonth: (year, month) => request(`/lizi-bills/${year}/${month}`),
-    getByYear: (year) => request(`/lizi-bills/year/${year}`),
-    getRecent: (limit = 10) => request(`/lizi-bills/recent?limit=${limit}`),
-    getAll: () => request('/lizi-bills'),
+    getPage: (params = {}) => {
+      const { year, month, page = 0, size = 10 } = params;
+      let url = `/lizi-bills?page=${page}&size=${size}`;
+      if (year) url += `&year=${year}`;
+      if (month) url += `&month=${month}`;
+      return request(url);
+    },
     delete: (id) => request(`/lizi-bills/${id}`, 'DELETE')
   },
 
   // 鸽子账单相关
   geziBill: {
     save: (data) => request('/gezi-bills', 'POST', data),
-    getRecent: (limit = 10) => request(`/gezi-bills/recent?limit=${limit}`),
-    getAll: () => request('/gezi-bills'),
+    getPage: (params = {}) => {
+      const { year, month, page = 0, size = 10 } = params;
+      let url = `/gezi-bills?page=${page}&size=${size}`;
+      if (year) url += `&year=${year}`;
+      if (month) url += `&month=${month}`;
+      return request(url);
+    },
     delete: (id) => request(`/gezi-bills/${id}`, 'DELETE')
   }
 }
@@ -92,6 +100,8 @@ export default {
  * // 在页面中导入
  * import api from '@/api/costSharingApi.js'
  *
+ * // ==================== 卡片相关 ====================
+ *
  * // 保存卡片
  * const card = await api.card.save({
  *   type: 'lizi',
@@ -101,6 +111,14 @@ export default {
  *   background: '',
  *   enableBackground: true
  * })
+ *
+ * // 获取所有卡片
+ * const cards = await api.card.getAll()
+ *
+ * // 根据类型获取卡片
+ * const liziCard = await api.card.getByType('lizi')
+ *
+ * // ==================== 李子账单相关 ====================
  *
  * // 保存李子账单
  * const bill = await api.liziBill.save({
@@ -113,6 +131,39 @@ export default {
  *   ownerDays: 15
  * })
  *
- * // 获取历史账单
- * const recentBills = await api.liziBill.getRecent(10)
+ * // 分页查询账单（推荐使用）
+ * const page1 = await api.liziBill.getPage({ page: 0, size: 10 })
+ * console.log('账单列表:', page1.content)
+ * console.log('总记录数:', page1.totalElements)
+ *
+ * // 查询2024年的账单
+ * const year2024 = await api.liziBill.getPage({ year: 2024, page: 0, size: 10 })
+ *
+ * // 查询2024年1月的账单
+ * const jan2024 = await api.liziBill.getPage({ year: 2024, month: 1, page: 0, size: 10 })
+ *
+ * // 删除账单
+ * await api.liziBill.delete(billId)
+ *
+ * // ==================== 鸽子账单相关 ====================
+ *
+ * // 保存鸽子账单
+ * const geziBill = await api.geziBill.save({
+ *   waterBill: 100.50,
+ *   electricBill: 200.75,
+ *   gasBill: 80.25,
+ *   splitRule: '普通分账',  // 或 '特殊分账'
+ *   year: 2024,
+ *   month: 1
+ * })
+ *
+ * // 分页查询账单（推荐使用）
+ * const geziPage = await api.geziBill.getPage({ page: 0, size: 10 })
+ *
+ * // 查询2024年的账单
+ * const geziYear2024 = await api.geziBill.getPage({ year: 2024, page: 0, size: 10 })
+ *
+ * // 删除账单
+ * await api.geziBill.delete(billId)
  */
+
