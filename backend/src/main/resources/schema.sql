@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS lizi_bills (
 -- ============================================
 CREATE TABLE IF NOT EXISTS gezi_bills (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    month INT NOT NULL COMMENT '月份 (1-12)',
+    year INT NOT NULL COMMENT '年份',
     water_bill DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '水费',
     electric_bill DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '电费',
     gas_bill DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '燃气费',
@@ -63,6 +65,8 @@ CREATE TABLE IF NOT EXISTS gezi_bills (
     chunfeng_amount DECIMAL(10, 2) COMMENT '春风应承担费用',
     chengzi_amount DECIMAL(10, 2) COMMENT '橙子应承担费用',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_month_year (month, year),
+    INDEX idx_year (year),
     INDEX idx_split_rule (split_rule),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='鸽子账单表';

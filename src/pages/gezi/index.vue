@@ -9,6 +9,33 @@
 
     <view v-if="!isShareMode" class="form-container">
       <view class="form-group">
+        <text class="label">📆 选择年份</text>
+        <picker
+          mode="selector"
+          :range="yearOptions"
+          :value="yearIndex"
+          @change="onYearChange"
+        >
+          <view class="picker">
+            {{ formData.year ? `${formData.year}年` : "请选择年份" }}
+          </view>
+        </picker>
+      </view>
+
+      <view class="form-group">
+        <text class="label">📅 选择月份</text>
+        <picker
+          mode="selector"
+          :range="monthOptions"
+          :value="monthIndex"
+          @change="onMonthChange"
+        >
+          <view class="picker">
+            {{ formData.month ? `${formData.month}月` : "请选择月份" }}
+          </view>
+        </picker>
+      </view>
+      <view class="form-group">
         <text class="label">💧 水费（元）</text>
         <uni-easyinput
           type="digit"
@@ -149,9 +176,23 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { formatAmount } from "@/utils/helpers.js";
+import { getLastMonth, formatAmount } from "@/utils/helpers.js";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
 import api from "@/api/costSharingApi.js";
+import dayjs from "dayjs";
+import { onLoad } from "@dcloudio/uni-app";
+
+// 年份选项（过去10年，包括今年）
+const currentYear = dayjs().year();
+const yearOptions = Array.from(
+  { length: 10 },
+  (_, i) => `${currentYear - i}年`
+);
+const yearIndex = ref(0);
+
+// 月份选项
+const monthOptions = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
+const monthIndex = ref(0);
 
 // 分账规则选项
 const splitRuleOptions = ["普通分账", "特殊分账"];
@@ -170,6 +211,8 @@ const easyinputPlaceholderStyle = "font-size:32rpx;color:#5a7c9a;";
 
 // 表单数据
 const formData = ref({
+  year: "",
+  month: "",
   waterBill: "",
   electricBill: "",
   gasBill: "",
@@ -202,6 +245,33 @@ const result = ref({
 const summaryTitle = computed(() => {
   return "🧾 本次账单：";
 });
+
+// 初始化月份和年份
+const initMonth = () => {
+  const { month, year } = getLastMonth();
+  formData.value.year = year;
+  formData.value.month = month;
+
+  // 设置年份索引（年份数组是从当前年份开始倒序的）
+  yearIndex.value = currentYear - year;
+  monthIndex.value = month - 1;
+};
+
+// 年份选择变化
+const onYearChange = (e) => {
+  const index = Number(e.detail.value);
+  const year = currentYear - index;
+  formData.value.year = year;
+  yearIndex.value = index;
+};
+
+// 月份选择变化
+const onMonthChange = (e) => {
+  const index = Number(e.detail.value);
+  const month = index + 1;
+  formData.value.month = month;
+  monthIndex.value = index;
+};
 
 // 分账规则选择变化
 const onSplitRuleChange = (e) => {
@@ -319,20 +389,20 @@ const calculateBill = async () => {
 
   // 保存账单到后端
   try {
-    const now = new Date();
+    const now = dayjs();
     const billData = {
+      month: parseInt(formData.value.month, 10),
+      year: formData.value.year || now.year(),
       waterBill: waterBill,
       electricBill: electricBill,
       gasBill: gasBill,
       splitRule: formData.value.splitRule,
-      year: now.getFullYear(),
-      month: now.getMonth() + 1
     };
 
     await api.geziBill.save(billData);
-    console.log('账单已保存到服务器');
+    console.log("账单已保存到服务器");
   } catch (error) {
-    console.error('保存账单失败:', error);
+    console.error("保存账单失败:", error);
     // 不影响用户继续使用，只记录错误
   }
 };
@@ -340,6 +410,8 @@ const calculateBill = async () => {
 // 重置表单
 const resetForm = () => {
   formData.value = {
+    year: "",
+    month: "",
     waterBill: "",
     electricBill: "",
     gasBill: "",
@@ -348,7 +420,10 @@ const resetForm = () => {
   errors.value = {};
   showResult.value = false;
   isShareMode.value = false;
+  yearIndex.value = 0;
+  monthIndex.value = 0;
   splitRuleIndex.value = 0;
+  initMonth();
 };
 
 // 切换分享模式
@@ -390,6 +465,9 @@ const onShareTimeline = () => {
 
 // 页面加载时初始化
 onMounted(async () => {
+  setTimeout(() => {
+    initMonth();
+  }, 100);
   // 获取系统信息，设置状态栏高度
   uni.getSystemInfo({
     success: (res) => {
@@ -399,24 +477,11 @@ onMounted(async () => {
       statusBarHeight.value = 20; // 默认值
     },
   });
+});
 
-  // 从 API 加载卡片数据以获取页面标题
-  try {
-    const geziCard = await api.card.getByType('gezi');
-    if (geziCard && geziCard.name) {
-      pageTitle.value = geziCard.name;
-    }
-  } catch (e) {
-    console.error("从API加载页面标题失败", e);
-    // 如果API加载失败，尝试从本地存储加载作为备用方案
-    try {
-      const geziCard = uni.getStorageSync("gezi_card");
-      if (geziCard && geziCard.name) {
-        pageTitle.value = geziCard.name;
-      }
-    } catch (localErr) {
-      console.error("从本地存储加载页面标题也失败", localErr);
-    }
+onLoad((options) => {
+  if (options && options.name) {
+    pageTitle.value = options.name;
   }
 });
 

@@ -9,6 +9,20 @@
 
     <view v-if="!isShareMode" class="form-container">
       <view class="form-group">
+        <text class="label">📆 选择年份</text>
+        <picker
+          mode="selector"
+          :range="yearOptions"
+          :value="yearIndex"
+          @change="onYearChange"
+        >
+          <view class="picker">
+            {{ formData.year ? `${formData.year}年` : "请选择年份" }}
+          </view>
+        </picker>
+      </view>
+
+      <view class="form-group">
         <text class="label">📅 选择月份</text>
         <picker
           mode="selector"
@@ -178,6 +192,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import dayjs from "dayjs";
 import {
   getLastMonth,
@@ -189,6 +204,14 @@ import { calculateCostSharing } from "@/utils/calculator.js";
 import { validateTotalDays, validateOwnerDays } from "@/utils/validator.js";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
 import api from "@/api/costSharingApi.js";
+
+// 年份选项（过去10年，包括今年）
+const currentYear = dayjs().year();
+const yearOptions = Array.from(
+  { length: 10 },
+  (_, i) => `${currentYear - i}年`
+);
+const yearIndex = ref(0);
 
 // 月份选项
 const monthOptions = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
@@ -207,6 +230,7 @@ const easyinputPlaceholderStyle = "font-size:32rpx;color:#5a7c9a;";
 
 // 表单数据
 const formData = ref({
+  year: "",
   month: "",
   totalDays: "",
   waterBill: "",
@@ -257,13 +281,35 @@ const summaryTitle = computed(() => {
   return "🧾 本次账单：";
 });
 
-// 初始化月份
+// 初始化月份和年份
 const initMonth = () => {
   const { month, year } = getLastMonth();
+  formData.value.year = year;
   formData.value.month = month;
+
+  // 设置年份索引（年份数组是从当前年份开始倒序的）
+  yearIndex.value = currentYear - year;
   monthIndex.value = month - 1;
+
   const days = getDaysInMonth(month, year);
   formData.value.totalDays = days;
+};
+
+// 年份选择变化
+const onYearChange = (e) => {
+  const index = Number(e.detail.value);
+  const year = currentYear - index;
+  formData.value.year = year;
+  yearIndex.value = index;
+
+  // 如果已选择月份，重新计算天数
+  if (formData.value.month) {
+    const days = getDaysInMonth(formData.value.month, year);
+    formData.value.totalDays = days;
+  }
+
+  // 重新验证房主居住天数
+  handleOwnerDaysInput();
 };
 
 // 月份选择变化
@@ -273,8 +319,8 @@ const onMonthChange = (e) => {
   formData.value.month = month;
   monthIndex.value = index;
 
-  const now = dayjs();
-  const year = now.year();
+  // 使用选中的年份，如果没有则使用当前年份
+  const year = formData.value.year || dayjs().year();
   const days = getDaysInMonth(month, year);
   formData.value.totalDays = days;
 
@@ -381,9 +427,9 @@ const calculateBill = async () => {
     };
 
     await api.liziBill.save(billData);
-    console.log('账单已保存到服务器');
+    console.log("账单已保存到服务器");
   } catch (error) {
-    console.error('保存账单失败:', error);
+    console.error("保存账单失败:", error);
     // 不影响用户继续使用，只记录错误
   }
 };
@@ -391,6 +437,7 @@ const calculateBill = async () => {
 // 重置表单
 const resetForm = () => {
   formData.value = {
+    year: "",
     month: "",
     totalDays: "",
     waterBill: "",
@@ -404,6 +451,7 @@ const resetForm = () => {
   };
   showResult.value = false;
   isShareMode.value = false;
+  yearIndex.value = 0;
   monthIndex.value = 0;
   initMonth();
 };
@@ -459,24 +507,11 @@ onMounted(async () => {
       statusBarHeight.value = 20; // 默认值
     },
   });
+});
 
-  // 从 API 加载卡片数据以获取页面标题
-  try {
-    const liziCard = await api.card.getByType('lizi');
-    if (liziCard && liziCard.name) {
-      pageTitle.value = liziCard.name;
-    }
-  } catch (e) {
-    console.error("从API加载页面标题失败", e);
-    // 如果API加载失败，尝试从本地存储加载作为备用方案
-    try {
-      const liziCard = uni.getStorageSync("lizi_card");
-      if (liziCard && liziCard.name) {
-        pageTitle.value = liziCard.name;
-      }
-    } catch (localErr) {
-      console.error("从本地存储加载页面标题也失败", localErr);
-    }
+onLoad((options) => {
+  if (options && options.name) {
+    pageTitle.value = options.name;
   }
 });
 

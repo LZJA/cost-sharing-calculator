@@ -48,9 +48,10 @@ public class Card {
     private String avatar;
 
     /**
-     * 背景图片路径
+     * 背景图片（Base64 编码或文件路径）
      */
-    @Column(length = 500)
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String background;
 
     /**

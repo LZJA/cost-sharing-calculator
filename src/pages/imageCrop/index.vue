@@ -30,6 +30,8 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import QfImageCropper from "@/components/qf-image-cropper/qf-image-cropper.vue";
+import { imageToBase64 } from "@/utils/imageUtils.js";
+
 // 状态栏高度
 const statusBarHeight = ref(0);
 
@@ -80,14 +82,16 @@ const resetCrop = () => {
 };
 
 // 设置背景并返回
-const setCardBackgroundAndReturn = (finalImagePath) => {
+const setCardBackgroundAndReturn = async (finalImagePath) => {
+  const base64String = await imageToBase64(finalImagePath);
+
   // 返回上一页并设置背景
   const pages = getCurrentPages();
   const prevPage = pages[pages.length - 2];
 
   // 调用上一页的方法设置背景
   if (prevPage && prevPage.$vm && prevPage.$vm.setCardBackground) {
-    prevPage.$vm.setCardBackground(finalImagePath, cardType.value);
+    prevPage.$vm.setCardBackground(base64String, cardType.value);
   }
 
   uni.navigateBack();

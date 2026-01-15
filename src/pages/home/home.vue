@@ -177,6 +177,7 @@
 <script setup>
 import { ref, onMounted, getCurrentInstance } from "vue";
 import api from "@/api/costSharingApi.js";
+import { imageToBase64 } from "@/utils/imageUtils.js";
 
 // 状态栏高度
 const statusBarHeight = ref(0);
@@ -207,6 +208,9 @@ const editingCardType = ref("");
 const navigateToLizi = () => {
   uni.navigateTo({
     url: "/pages/lizi/index",
+    query: {
+      name: liziCard.value.name,
+    },
     fail: (err) => {
       console.error("导航失败", err);
       uni.showToast({
@@ -221,6 +225,9 @@ const navigateToLizi = () => {
 const navigateToGezi = () => {
   uni.navigateTo({
     url: "/pages/gezi/index",
+    query: {
+      name: geziCard.value.name,
+    },
     fail: (err) => {
       console.error("导航失败", err);
       uni.showToast({
@@ -271,7 +278,7 @@ const saveCardEdit = async () => {
     // 准备保存的数据，添加 type 字段
     const cardData = {
       ...editingCard.value,
-      type: editingCardType.value
+      type: editingCardType.value,
     };
 
     // 调用 API 保存卡片数据
@@ -304,10 +311,11 @@ const editLiziBackground = () => {
   uni.chooseImage({
     count: 1,
     sourceType: ["album"],
+    sizeType: ["compressed"], // 使用压缩图
     success: (res) => {
       const tempFilePath = res.tempFilePaths[0];
-      // 先保存图片到本地
-      saveImageToLocal(tempFilePath, "lizi");
+      // 转换图片为 Base64
+      convertImageToBase64(tempFilePath, "lizi");
     },
     fail: (err) => {
       console.error("选择图片失败", err);
@@ -324,10 +332,11 @@ const editGeziBackground = () => {
   uni.chooseImage({
     count: 1,
     sourceType: ["album"],
+    sizeType: ["compressed"], // 使用压缩图
     success: (res) => {
       const tempFilePath = res.tempFilePaths[0];
-      // 先保存图片到本地
-      saveImageToLocal(tempFilePath, "gezi");
+      // 转换图片为 Base64
+      convertImageToBase64(tempFilePath, "gezi");
     },
     fail: (err) => {
       console.error("选择图片失败", err);
@@ -339,45 +348,38 @@ const editGeziBackground = () => {
   });
 };
 
-// 保存图片到本地
-const saveImageToLocal = (tempFilePath, cardType) => {
+// 将图片转换为 Base64 并保存
+const convertImageToBase64 = async (tempFilePath, cardType) => {
   uni.showLoading({
-    title: "保存图片中...",
+    title: "处理图片中...",
   });
 
-  // 保存临时文件到本地永久目录
-  uni.saveFile({
-    tempFilePath: tempFilePath,
-    success: (saveRes) => {
-      uni.hideLoading();
-      const savedFilePath = saveRes.savedFilePath;
-
-      console.log("savedFilePath", savedFilePath);
-
-      // 询问是否需要裁剪
-      uni.showModal({
-        title: "图片处理",
-        content: "是否要裁剪图片？",
-        success: (modalRes) => {
-          if (modalRes.confirm) {
-            // 图片裁剪
-            cropImage(savedFilePath, cardType);
-          } else {
-            // 直接使用
-            setCardBackground(savedFilePath, cardType);
-          }
-        },
-      });
-    },
-    fail: (err) => {
-      uni.hideLoading();
-      console.error("保存图片失败", err);
-      uni.showToast({
-        title: "保存图片失败，请重试",
-        icon: "none",
-      });
-    },
-  });
+  try {
+    uni.hideLoading();
+    // 询问是否需要裁剪
+    uni.showModal({
+      title: "图片处理",
+      content: "是否要裁剪图片？",
+      success: async (modalRes) => {
+        if (modalRes.confirm) {
+          // 图片裁剪
+          cropImage(tempFilePath, cardType);
+        } else {
+          // 将图片转换为 Base64
+          const base64String = await imageToBase64(tempFilePath);
+          // 直接使用
+          setCardBackground(base64String, cardType);
+        }
+      },
+    });
+  } catch (error) {
+    uni.hideLoading();
+    console.error("转换图片失败", error);
+    uni.showToast({
+      title: "处理图片失败，请重试",
+      icon: "none",
+    });
+  }
 };
 
 // 图片裁剪
@@ -391,9 +393,11 @@ const cropImage = (imagePath, cardType) => {
       // 如果没有裁剪页面，使用简单的预览方式
       uni.previewImage({
         urls: [imagePath],
-        success: () => {
+        success: async () => {
+          // 将图片转换为 Base64
+          const base64String = await imageToBase64(tempFilePath);
           // 预览后直接使用原图
-          setCardBackground(imagePath, cardType);
+          setCardBackground(base64String, cardType);
         },
       });
     },
@@ -409,14 +413,14 @@ const setCardBackground = async (imagePath, cardType) => {
       // 调用 API 保存卡片数据
       await api.card.save({
         ...liziCard.value,
-        type: "lizi"
+        type: "lizi",
       });
     } else if (cardType === "gezi") {
       geziCard.value.background = imagePath;
       // 调用 API 保存卡片数据
       await api.card.save({
         ...geziCard.value,
-        type: "gezi"
+        type: "gezi",
       });
     }
 
@@ -440,17 +444,18 @@ const loadCardData = async () => {
     const cards = await api.card.getAll();
 
     // 查找李子和鸽子的卡片
-    const liziData = cards.find(card => card.type === 'lizi');
-    const geziData = cards.find(card => card.type === 'gezi');
+    const liziData = cards.find((card) => card.type === "lizi");
+    const geziData = cards.find((card) => card.type === "gezi");
 
     // 更新李子卡片数据
     if (liziData) {
       liziCard.value = {
         ...liziCard.value,
         ...liziData,
-        enableBackground: liziData.enableBackground !== undefined
-          ? liziData.enableBackground
-          : false,
+        enableBackground:
+          liziData.enableBackground !== undefined
+            ? liziData.enableBackground
+            : false,
       };
     }
 
@@ -459,39 +464,14 @@ const loadCardData = async () => {
       geziCard.value = {
         ...geziCard.value,
         ...geziData,
-        enableBackground: geziData.enableBackground !== undefined
-          ? geziData.enableBackground
-          : false,
+        enableBackground:
+          geziData.enableBackground !== undefined
+            ? geziData.enableBackground
+            : false,
       };
     }
   } catch (e) {
     console.error("加载卡片数据失败", e);
-    // 如果API加载失败，尝试从本地存储加载作为备用方案
-    try {
-      const liziData = uni.getStorageSync("lizi_card");
-      if (liziData) {
-        liziCard.value = {
-          ...liziCard.value,
-          ...liziData,
-          enableBackground: liziData.enableBackground !== undefined
-            ? liziData.enableBackground
-            : false,
-        };
-      }
-
-      const geziData = uni.getStorageSync("gezi_card");
-      if (geziData) {
-        geziCard.value = {
-          ...geziCard.value,
-          ...geziData,
-          enableBackground: geziData.enableBackground !== undefined
-            ? geziData.enableBackground
-            : false,
-        };
-      }
-    } catch (localErr) {
-      console.error("从本地存储加载卡片数据也失败", localErr);
-    }
   }
 };
 
@@ -1039,6 +1019,7 @@ defineExpose({
     transform: translateX(-100%) translateY(-100%) rotate(45deg);
     opacity: 0;
   }
+
   50% {
     transform: translateX(100%) translateY(100%) rotate(45deg);
     opacity: 1;
@@ -1121,6 +1102,7 @@ defineExpose({
   color: #7c95aa;
   font-weight: 500;
 }
+
 .card.has-bg {
   border: none;
 }
