@@ -1,36 +1,38 @@
 /**
  * 前端API服务封装
- * 建议将此文件放在 src/api/costSharingApi.js
+ * 使用微信云托管 callContainer API
  */
 
-// API基础URL - 根据环境配置
-const getBaseUrl = () => {
-  // 开发环境
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:8080/api'
-  }
-  // 生产环境 - 修改为你的实际域名
-  return 'https://your-domain.com/api'
+// 云托管服务配置
+const CLOUD_CONFIG = {
+  // 云托管环境ID
+  env: 'prod-0gko48kec6190500',
+  // 云托管服务名称（在云托管控制台查看）
+  serviceName: 'cost-sharing',
+  // 云托管服务路径前缀
+  servicePrefix: '/api'
 }
 
-const API_BASE_URL = getBaseUrl()
-
 /**
- * 通用请求方法
+ * 通用请求方法 - 使用 wx.cloud.callContainer
  */
 const request = (url, method = 'GET', data = null) => {
   return new Promise((resolve, reject) => {
     uni.showLoading({ title: '加载中...' })
 
-    uni.request({
-      url: `${API_BASE_URL}${url}`,
-      method,
-      data,
+    const requestConfig = {
+      config: {
+        env: CLOUD_CONFIG.env
+      },
+      path: `${CLOUD_CONFIG.servicePrefix}${url}`,
+      method: method,
       header: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-WX-SERVICE': CLOUD_CONFIG.serviceName,
       },
       success: (res) => {
         uni.hideLoading()
+        console.log('API响应:', res)
 
         if (res.statusCode === 200 && res.data.code === 200) {
           resolve(res.data.data)
@@ -46,14 +48,23 @@ const request = (url, method = 'GET', data = null) => {
       },
       fail: (err) => {
         uni.hideLoading()
+        console.error('API请求失败:', err)
         uni.showToast({
-          title: '网络请求失败，请检查网络连接',
+          title: '网络请求失败:' + (err.errMsg || '未知错误'),
           icon: 'none',
-          duration: 2000
+          duration: 3000
         })
         reject(err)
       }
-    })
+    }
+
+    // 只有在 POST/PUT 请求时才添加 data
+    if (data && (method === 'POST' || method === 'PUT')) {
+      requestConfig.data = data
+    }
+
+    console.log('发起请求:', requestConfig)
+    wx.cloud.callContainer(requestConfig)
   })
 }
 

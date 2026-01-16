@@ -2,6 +2,17 @@
 export default {
   onLaunch: function() {
     console.log('App Launch')
+
+    // 初始化云开发
+    if (wx.cloud) {
+      wx.cloud.init({
+        env: 'prod-0gko48kec6190500', // 替换为您的云托管环境ID
+        traceUser: true
+      })
+      console.log('云开发初始化成功')
+    } else {
+      console.error('请使用 2.2.3 或以上的基础库以使用云能力')
+    }
   },
   onShow: function() {
     console.log('App Show')

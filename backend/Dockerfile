@@ -1,5 +1,5 @@
-# 使用 Java 17 作为基础镜像（支持多平台）
-FROM amazoncorretto:17
+# 第一阶段：构建应用
+FROM amazoncorretto:17 AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -25,8 +25,17 @@ COPY src ./src
 # 编译项目
 RUN mvn clean package -DskipTests
 
+# 第二阶段：运行应用
+FROM amazoncorretto:17
+
+# 设置工作目录
+WORKDIR /app
+
+# 从构建阶段复制编译好的 jar 文件
+COPY --from=builder /app/target/cost-sharing-backend-1.0.0.jar ./app.jar
+
 # 暴露端口
 EXPOSE 8080
 
 # 启动应用
-CMD ["java", "-jar", "target/cost-sharing-backend-1.0.0.jar"]
+CMD ["java", "-jar", "app.jar"]

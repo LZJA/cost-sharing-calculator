@@ -4,9 +4,9 @@ spring:
 
   datasource:
     # Docker 环境会通过环境变量覆盖这些配置
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/cost_sharing_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://10.5.102.85:3306/cost_sharing_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
     username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:your_password_here}
+    password: ${SPRING_DATASOURCE_PASSWORD:Li199266jian}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
