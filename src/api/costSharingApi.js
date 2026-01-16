@@ -20,12 +20,14 @@ const request = (url, method = 'GET', data = null) => {
   return new Promise((resolve, reject) => {
     uni.showLoading({ title: '加载中...' })
 
+    // 构建请求配置
     const requestConfig = {
       config: {
         env: CLOUD_CONFIG.env
       },
+      service: CLOUD_CONFIG.serviceName,
       path: `${CLOUD_CONFIG.servicePrefix}${url}`,
-      method: method,
+      method: method.toUpperCase(),
       header: {
         'Content-Type': 'application/json',
         'X-WX-SERVICE': CLOUD_CONFIG.serviceName,
@@ -34,10 +36,29 @@ const request = (url, method = 'GET', data = null) => {
         uni.hideLoading()
         console.log('API响应:', res)
 
-        if (res.statusCode === 200 && res.data.code === 200) {
-          resolve(res.data.data)
+        // 处理响应数据
+        if (res.statusCode === 200) {
+          // 尝试解析响应数据
+          const responseData = res.data
+
+          // 检查是否是标准格式 { code, message, data }
+          if (responseData && responseData.code === 200) {
+            resolve(responseData.data)
+          } else if (responseData && responseData.code) {
+            // 有 code 但不是 200
+            const errorMsg = responseData.message || '请求失败'
+            uni.showToast({
+              title: errorMsg,
+              icon: 'none',
+              duration: 2000
+            })
+            reject(new Error(errorMsg))
+          } else {
+            // 直接返回原始数据
+            resolve(responseData)
+          }
         } else {
-          const errorMsg = res.data.message || '请求失败'
+          const errorMsg = res.data?.message || `请求失败 (${res.statusCode})`
           uni.showToast({
             title: errorMsg,
             icon: 'none',
@@ -58,12 +79,15 @@ const request = (url, method = 'GET', data = null) => {
       }
     }
 
-    // 只有在 POST/PUT 请求时才添加 data
-    if (data && (method === 'POST' || method === 'PUT')) {
-      requestConfig.data = data
+    // 对于 POST/PUT/DELETE 请求，添加 data
+    if (data) {
+      const upperMethod = method.toUpperCase()
+      if (upperMethod === 'POST' || upperMethod === 'PUT' || upperMethod === 'PATCH') {
+        requestConfig.data = data
+      }
     }
 
-    console.log('发起请求:', requestConfig)
+    console.log('发起请求:', JSON.stringify(requestConfig, null, 2))
     wx.cloud.callContainer(requestConfig)
   })
 }

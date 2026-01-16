@@ -44,7 +44,7 @@
           <view class="card-action-icon" @tap.stop="editLiziCard">
             <text>✏️</text>
           </view>
-          <view class="card-action-icon" @tap.stop="editLiziBackground">
+          <view class="card-action-icon" @tap.stop="editBackground('lizi')">
             <text>🎨</text>
           </view>
         </view>
@@ -79,7 +79,7 @@
           <view class="card-action-icon" @tap.stop="editGeziCard">
             <text>✏️</text>
           </view>
-          <view class="card-action-icon" @tap.stop="editGeziBackground">
+          <view class="card-action-icon" @tap.stop="editBackground('gezi')">
             <text>🎨</text>
           </view>
         </view>
@@ -177,7 +177,10 @@
 <script setup>
 import { ref, onMounted, getCurrentInstance } from "vue";
 import api from "@/api/costSharingApi.js";
-import { imageToBase64 } from "@/utils/imageUtils.js";
+import {
+  uploadImageWithCompress,
+  deleteFromCloud,
+} from "@/utils/uploadImage.js";
 
 // 状态栏高度
 const statusBarHeight = ref(0);
@@ -305,83 +308,6 @@ const saveCardEdit = async () => {
     });
   }
 };
-
-// 编辑李子卡片背景
-const editLiziBackground = () => {
-  uni.chooseImage({
-    count: 1,
-    sourceType: ["album"],
-    sizeType: ["compressed"], // 使用压缩图
-    success: (res) => {
-      const tempFilePath = res.tempFilePaths[0];
-      // 转换图片为 Base64
-      convertImageToBase64(tempFilePath, "lizi");
-    },
-    fail: (err) => {
-      console.error("选择图片失败", err);
-      uni.showToast({
-        title: "选择图片失败",
-        icon: "none",
-      });
-    },
-  });
-};
-
-// 编辑鸽子卡片背景
-const editGeziBackground = () => {
-  uni.chooseImage({
-    count: 1,
-    sourceType: ["album"],
-    sizeType: ["compressed"], // 使用压缩图
-    success: (res) => {
-      const tempFilePath = res.tempFilePaths[0];
-      // 转换图片为 Base64
-      convertImageToBase64(tempFilePath, "gezi");
-    },
-    fail: (err) => {
-      console.error("选择图片失败", err);
-      uni.showToast({
-        title: "选择图片失败",
-        icon: "none",
-      });
-    },
-  });
-};
-
-// 将图片转换为 Base64 并保存
-const convertImageToBase64 = async (tempFilePath, cardType) => {
-  uni.showLoading({
-    title: "处理图片中...",
-  });
-
-  try {
-    uni.hideLoading();
-    // 询问是否需要裁剪
-    uni.showModal({
-      title: "图片处理",
-      content: "是否要裁剪图片？",
-      success: async (modalRes) => {
-        if (modalRes.confirm) {
-          // 图片裁剪
-          cropImage(tempFilePath, cardType);
-        } else {
-          // 将图片转换为 Base64
-          const base64String = await imageToBase64(tempFilePath);
-          // 直接使用
-          setCardBackground(base64String, cardType);
-        }
-      },
-    });
-  } catch (error) {
-    uni.hideLoading();
-    console.error("转换图片失败", error);
-    uni.showToast({
-      title: "处理图片失败，请重试",
-      icon: "none",
-    });
-  }
-};
-
 // 图片裁剪
 const cropImage = (imagePath, cardType) => {
   // 微信小程序图片裁剪实现
@@ -394,10 +320,7 @@ const cropImage = (imagePath, cardType) => {
       uni.previewImage({
         urls: [imagePath],
         success: async () => {
-          // 将图片转换为 Base64
-          const base64String = await imageToBase64(tempFilePath);
-          // 预览后直接使用原图
-          setCardBackground(base64String, cardType);
+          setCardBackground(imagePath, cardType);
         },
       });
     },
@@ -405,29 +328,39 @@ const cropImage = (imagePath, cardType) => {
 };
 
 // 设置卡片背景
-const setCardBackground = async (imagePath, cardType) => {
+const setCardBackground = async (tempFilePath, cardType) => {
   try {
-    // 更新卡片对象中的背景图片
+    uni.showLoading({ title: "上传中..." });
+
+    // 上传到云存储
+    const { fileID } = await uploadImageWithCompress(tempFilePath, {
+      folder: "card-backgrounds",
+      quality: 60,
+      needCompress: true,
+    });
+    let card = "";
     if (cardType === "lizi") {
-      liziCard.value.background = imagePath;
-      // 调用 API 保存卡片数据
-      await api.card.save({
-        ...liziCard.value,
-        type: "lizi",
-      });
+      card = liziCard.value;
     } else if (cardType === "gezi") {
-      geziCard.value.background = imagePath;
-      // 调用 API 保存卡片数据
-      await api.card.save({
-        ...geziCard.value,
-        type: "gezi",
-      });
+      card = geziCard.value;
+    }
+    // 删除旧背景图
+    if (card.background?.startsWith("cloud://")) {
+      await deleteFromCloud(card.background);
     }
 
-    uni.showToast({
-      title: "背景设置成功",
-      icon: "success",
+    // 保存云文件ID
+    card.background = fileID;
+    card.enableBackground = true;
+
+    // 保存到数据库
+    await api.card.save({
+      type: cardType,
+      ...card,
     });
+
+    uni.hideLoading();
+    uni.showToast({ title: "设置成功", icon: "success" });
   } catch (error) {
     console.error("设置背景失败", error);
     uni.showToast({
@@ -435,6 +368,42 @@ const setCardBackground = async (imagePath, cardType) => {
       icon: "none",
     });
   }
+};
+
+// 编辑卡片背景
+const editBackground = (type) => {
+  uni.chooseImage({
+    count: 1,
+    sourceType: ["album"],
+    sizeType: ["compressed"],
+    success: async (res) => {
+      const tempFilePath = res.tempFilePaths[0];
+
+      try {
+        // 询问是否需要裁剪
+        uni.showModal({
+          title: "图片处理",
+          content: "是否要裁剪图片？",
+          success: async (modalRes) => {
+            if (modalRes.confirm) {
+              // 图片裁剪
+              cropImage(tempFilePath, type);
+            } else {
+              setCardBackground(tempFilePath, type);
+            }
+          },
+        });
+      } catch (error) {
+        uni.hideLoading();
+        console.error("设置失败", error);
+        uni.showToast({ title: "设置失败", icon: "none" });
+      }
+    },
+    fail: (err) => {
+      console.error("选择图片失败", err);
+      uni.showToast({ title: "选择图片失败", icon: "none" });
+    },
+  });
 };
 
 // 加载卡片数据
