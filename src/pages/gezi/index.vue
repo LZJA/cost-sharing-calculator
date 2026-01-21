@@ -1,14 +1,10 @@
 <template>
   <view class="container">
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-
-    <view v-if="!isShareMode" class="header">
-      <text class="title">{{ pageTitle }}</text>
-      <view class="header-action" @click="viewBillList">
+    <CustomHeader v-if="!isShareMode" :title="pageTitle">
+      <view slot="header-right" class="header-action" @click="viewBillList">
         <text class="action-text">查看账单</text>
       </view>
-    </view>
+    </CustomHeader>
 
     <view v-if="!isShareMode" class="form-container">
       <view class="form-group">
@@ -181,6 +177,7 @@
 import { ref, computed, onMounted } from "vue";
 import { getLastMonth, formatAmount } from "@/utils/helpers.js";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
+import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 import api from "@/api/costSharingApi.js";
 import dayjs from "dayjs";
 import { onLoad } from "@dcloudio/uni-app";
@@ -189,7 +186,7 @@ import { onLoad } from "@dcloudio/uni-app";
 const currentYear = dayjs().year();
 const yearOptions = Array.from(
   { length: 10 },
-  (_, i) => `${currentYear - i}年`
+  (_, i) => `${currentYear - i}年`,
 );
 const yearIndex = ref(0);
 
@@ -229,9 +226,6 @@ const errors = ref({});
 const showResult = ref(false);
 const isShareMode = ref(false);
 
-// 状态栏高度
-const statusBarHeight = ref(0);
-
 // 页面标题
 const pageTitle = ref("鸽子的分账计算器");
 
@@ -248,6 +242,12 @@ const result = ref({
 const summaryTitle = computed(() => {
   return "🧾 本次账单：";
 });
+
+const viewBillList = () => {
+  uni.navigateTo({
+    url: `/pages/billList/index?type=gezi`,
+  });
+};
 
 // 初始化月份和年份
 const initMonth = () => {
@@ -429,13 +429,6 @@ const resetForm = () => {
   initMonth();
 };
 
-// 查看账单列表
-const viewBillList = () => {
-  uni.navigateTo({
-    url: '/pages/billList/index?type=gezi'
-  });
-};
-
 // 切换分享模式
 const toggleShareMode = () => {
   isShareMode.value = !isShareMode.value;
@@ -479,14 +472,14 @@ onMounted(async () => {
     initMonth();
   }, 100);
   // 获取系统信息，设置状态栏高度
-  uni.getSystemInfo({
+  /*uni.getSystemInfo({
     success: (res) => {
       statusBarHeight.value = res.statusBarHeight || 20;
     },
     fail: () => {
       statusBarHeight.value = 20; // 默认值
     },
-  });
+  });*/
 });
 
 onLoad((options) => {
@@ -509,7 +502,7 @@ const posterData = computed(() => ({
     Object.entries(result.value).map(([key, value]) => [
       key,
       formatAmount(value),
-    ])
+    ]),
   ),
 }));
 
@@ -523,43 +516,10 @@ const onPosterClose = () => {
 </script>
 
 <style lang="scss" scoped>
-.status-bar {
-  width: 100%;
-  background: transparent;
-}
-
 .container {
   min-height: 100vh;
   padding: 48rpx 24rpx 32rpx;
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #ffecd2 100%);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 60rpx;
-}
-
-.title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #5a7c9a;
-  text-shadow: 2rpx 2rpx 4rpx rgba(0, 0, 0, 0.05);
-  letter-spacing: 2rpx;
-}
-
-.header-action {
-  padding: 16rpx 32rpx;
-  background: linear-gradient(135deg, #ff9ab8 0%, #ffb3d9 100%);
-  border-radius: 44rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255, 154, 184, 0.3);
-}
-
-.action-text {
-  font-size: 28rpx;
-  color: #fff;
-  font-weight: 600;
 }
 
 .form-container {
@@ -770,5 +730,18 @@ const onPosterClose = () => {
 
 .action-buttons {
   margin-top: 40rpx;
+}
+
+.header-action {
+  padding: 16rpx 32rpx;
+  background: linear-gradient(135deg, #ff9ab8 0%, #ffb3d9 100%);
+  border-radius: 44rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 154, 184, 0.3);
+}
+
+.action-text {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: 600;
 }
 </style>

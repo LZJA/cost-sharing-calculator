@@ -1,16 +1,7 @@
 <template>
   <view class="container">
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-
     <!-- 头部 -->
-    <view class="header">
-      <view class="header-left" @tap="goBack">
-        <text class="back-icon">←</text>
-      </view>
-      <text class="header-title">{{ pageTitle }}</text>
-      <view class="header-right"></view>
-    </view>
+    <CustomHeader :title="pageTitle" :showBack="true" :showGlass="true" />
 
     <!-- 筛选区域 -->
     <view class="filter-container">
@@ -20,12 +11,11 @@
           <text class="filter-value">{{ dateRangeText }}</text>
         </view>
         <view class="filter-action" @tap="resetFilter">
-          <!-- <text class="reset-icon">刷新</text> -->
           <uni-icons
             custom-prefix="iconfont"
             type="icon-shuaxin1"
             color="#5a7c9a"
-            size="24"
+            size="18"
           ></uni-icons>
         </view>
       </view>
@@ -44,8 +34,6 @@
           :key="bill.id"
           :right-options="swipeOptions"
           @click="handleSwipeClick($event, bill)"
-          @touchstart.stop
-          @touchmove.stop
         >
           <view class="bill-item" @tap="viewBillDetail(bill)">
             <view class="bill-header">
@@ -114,57 +102,59 @@
           </view>
         </view>
         <view class="modal-body">
-          <view class="date-picker-group">
-            <text class="date-label">开始日期</text>
-            <view class="date-row">
-              <picker
-                mode="selector"
-                :range="yearOptions"
-                :value="startYearIndex"
-                @change="onStartYearChange"
-              >
-                <view class="picker-btn">{{
-                  filterParams.startYear || "年份"
-                }}</view>
-              </picker>
-              <text class="separator">-</text>
-              <picker
-                mode="selector"
-                :range="monthOptions"
-                :value="startMonthIndex"
-                @change="onStartMonthChange"
-              >
-                <view class="picker-btn">{{
-                  filterParams.startMonth || "月份"
-                }}</view>
-              </picker>
+          <view class="date-picker-box">
+            <view class="date-picker-group">
+              <text class="date-label">开始日期</text>
+              <view class="date-row">
+                <picker
+                  mode="selector"
+                  :range="yearOptions"
+                  :value="startYearIndex"
+                  @change="onStartYearChange"
+                >
+                  <view class="picker-btn">{{
+                    filterParams.startYear || "年份"
+                  }}</view>
+                </picker>
+                <text class="separator">-</text>
+                <picker
+                  mode="selector"
+                  :range="monthOptions"
+                  :value="startMonthIndex"
+                  @change="onStartMonthChange"
+                >
+                  <view class="picker-btn">{{
+                    filterParams.startMonth || "月份"
+                  }}</view>
+                </picker>
+              </view>
             </view>
-          </view>
 
-          <view class="date-picker-group">
-            <text class="date-label">结束日期</text>
-            <view class="date-row">
-              <picker
-                mode="selector"
-                :range="yearOptions"
-                :value="endYearIndex"
-                @change="onEndYearChange"
-              >
-                <view class="picker-btn">{{
-                  filterParams.endYear || "年份"
-                }}</view>
-              </picker>
-              <text class="separator">-</text>
-              <picker
-                mode="selector"
-                :range="monthOptions"
-                :value="endMonthIndex"
-                @change="onEndMonthChange"
-              >
-                <view class="picker-btn">{{
-                  filterParams.endMonth || "月份"
-                }}</view>
-              </picker>
+            <view class="date-picker-group">
+              <text class="date-label">结束日期</text>
+              <view class="date-row">
+                <picker
+                  mode="selector"
+                  :range="yearOptions"
+                  :value="endYearIndex"
+                  @change="onEndYearChange"
+                >
+                  <view class="picker-btn">{{
+                    filterParams.endYear || "年份"
+                  }}</view>
+                </picker>
+                <text class="separator">-</text>
+                <picker
+                  mode="selector"
+                  :range="monthOptions"
+                  :value="endMonthIndex"
+                  @change="onEndMonthChange"
+                >
+                  <view class="picker-btn">{{
+                    filterParams.endMonth || "月份"
+                  }}</view>
+                </picker>
+              </view>
             </view>
           </view>
 
@@ -189,9 +179,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import api from "@/api/costSharingApi.js";
-
-// 状态栏高度
-const statusBarHeight = ref(0);
+import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 
 // 滑动操作选项
 const swipeOptions = ref([
@@ -213,7 +201,7 @@ const pageTitle = ref("账单列表");
 // 账单列表数据
 const billList = ref([]);
 const currentPage = ref(0);
-const pageSize = ref(10);
+const pageSize = ref(5);
 const totalPages = ref(0);
 const loading = ref(false);
 const hasMore = ref(true);
@@ -280,11 +268,6 @@ const formatDate = (year, month) => {
 const formatMoney = (amount) => {
   if (!amount) return "0.00";
   return Number(amount).toFixed(2);
-};
-
-// 返回上一页
-const goBack = () => {
-  uni.navigateBack();
 };
 
 // 显示日期选择器
@@ -495,11 +478,11 @@ const viewBillDetail = (bill) => {
 // 页面加载
 onMounted(() => {
   // 获取系统信息
-  uni.getSystemInfo({
+  /*uni.getSystemInfo({
     success: (res) => {
       statusBarHeight.value = res.statusBarHeight || 20;
     },
-  });
+  });*/
 
   // 获取页面参数
   const pages = getCurrentPages();
@@ -521,39 +504,9 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.status-bar {
-  width: 100%;
-  background: transparent;
-}
-
 .container {
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #ffecd2 100%);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 32rpx 24rpx;
-  background: rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(10px);
-}
-
-.header-left,
-.header-right {
-  width: 80rpx;
-}
-
-.back-icon {
-  font-size: 40rpx;
-  color: #5a7c9a;
-}
-
-.header-title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #5a7c9a;
 }
 
 .filter-container {
@@ -588,8 +541,7 @@ onMounted(() => {
 }
 
 .filter-action {
-  width: 100rpx;
-  height: 100rpx;
+  padding: 23rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -599,7 +551,7 @@ onMounted(() => {
 }
 
 .bill-list {
-  height: calc(100vh - 280rpx);
+  height: calc(100vh - 320rpx - var(--status-bar-height));
   padding: 0 24rpx 24rpx;
   box-sizing: border-box;
 }
@@ -759,8 +711,10 @@ onMounted(() => {
   max-height: calc(80vh - 300rpx);
   overflow-y: auto;
 }
-
-.date-picker-group {
+.date-picker-box {
+  display: flex;
+  align-items: center;
+  gap: 60rpx;
   margin-bottom: 32rpx;
 }
 
