@@ -78,17 +78,24 @@ public class LiziBillService {
     }
 
     /**
-     * 分页查询账单列表（支持按年份和月份过滤）
+     * 分页查询账单列表（支持按年份、月份或年月区间过滤）
      *
      * @param year 年份（可选）
      * @param month 月份（可选）
+     * @param startYear 开始年份（可选）
+     * @param startMonth 开始月份（可选）
+     * @param endYear 结束年份（可选）
+     * @param endMonth 结束月份（可选）
      * @param page 页码（从0开始）
      * @param size 每页大小
      * @return 分页结果
      */
-    public Page<LiziBill> getBillsPage(Integer year, Integer month, int page, int size) {
+    public Page<LiziBill> getBillsPage(Integer year, Integer month,
+                                        Integer startYear, Integer startMonth,
+                                        Integer endYear, Integer endMonth,
+                                        int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return billRepository.findByYearAndMonth(year, month, pageable);
+        return billRepository.findByYearAndMonth(year, month, startYear, startMonth, endYear, endMonth, pageable);
     }
 
     /**

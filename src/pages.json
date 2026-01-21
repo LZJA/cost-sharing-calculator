@@ -31,6 +31,13 @@
         "enablePullDownRefresh": false,
         "disableScroll": true
       }
+    },
+    {
+      "path": "pages/billList/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "账单列表"
+      }
     }
   ],
   "globalStyle": {

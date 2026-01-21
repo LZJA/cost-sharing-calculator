@@ -5,6 +5,9 @@
 
     <view v-if="!isShareMode" class="header">
       <text class="title">{{ pageTitle }}</text>
+      <view class="header-action" @click="viewBillList">
+        <text class="action-text">查看账单</text>
+      </view>
     </view>
 
     <view v-if="!isShareMode" class="form-container">
@@ -426,6 +429,13 @@ const resetForm = () => {
   initMonth();
 };
 
+// 查看账单列表
+const viewBillList = () => {
+  uni.navigateTo({
+    url: '/pages/billList/index?type=gezi'
+  });
+};
+
 // 切换分享模式
 const toggleShareMode = () => {
   isShareMode.value = !isShareMode.value;
@@ -525,7 +535,9 @@ const onPosterClose = () => {
 }
 
 .header {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 60rpx;
 }
 
@@ -535,6 +547,19 @@ const onPosterClose = () => {
   color: #5a7c9a;
   text-shadow: 2rpx 2rpx 4rpx rgba(0, 0, 0, 0.05);
   letter-spacing: 2rpx;
+}
+
+.header-action {
+  padding: 16rpx 32rpx;
+  background: linear-gradient(135deg, #ff9ab8 0%, #ffb3d9 100%);
+  border-radius: 44rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 154, 184, 0.3);
+}
+
+.action-text {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: 600;
 }
 
 .form-container {
