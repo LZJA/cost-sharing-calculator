@@ -84,6 +84,22 @@
           </view>
         </view>
       </view>
+
+      <!-- 统计分析 -->
+      <view class="card statistics-card" @click="navigateToStatistics">
+        <view class="card-header">
+          <view class="card-avatars">
+            <view class="avatar statistics-avatar">📊</view>
+          </view>
+        </view>
+        <view class="card-content">
+          <text class="card-title">统计分析</text>
+          <text class="card-balance">可视化查看账单趋势</text>
+        </view>
+        <view class="card-badge">
+          <text class="badge-text">NEW</text>
+        </view>
+      </view>
     </view>
 
     <!-- 底部提示 -->
@@ -241,6 +257,20 @@ const navigateToGezi = () => {
   });
 };
 
+// 导航到统计分析页面
+const navigateToStatistics = () => {
+  uni.navigateTo({
+    url: "/pages/statistics/index",
+    fail: (err) => {
+      console.error("导航失败", err);
+      uni.showToast({
+        title: "页面跳转失败",
+        icon: "none",
+      });
+    },
+  });
+};
+
 // 编辑李子卡片
 const editLiziCard = () => {
   editingCard.value = { ...liziCard.value };
@@ -313,7 +343,7 @@ const cropImage = (imagePath, cardType) => {
   // 微信小程序图片裁剪实现
   uni.navigateTo({
     url: `/pages/imageCrop/index?imagePath=${encodeURIComponent(
-      imagePath
+      imagePath,
     )}&cardType=${cardType}`,
     fail: () => {
       // 如果没有裁剪页面，使用简单的预览方式
@@ -631,7 +661,8 @@ defineExpose({
   );
   border-radius: 32rpx;
   padding: 40rpx;
-  box-shadow: 0 12rpx 40rpx rgba(90, 124, 154, 0.08),
+  box-shadow:
+    0 12rpx 40rpx rgba(90, 124, 154, 0.08),
     0 4rpx 16rpx rgba(90, 124, 154, 0.06),
     inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
   border: 1rpx solid rgba(255, 255, 255, 0.2);
@@ -805,7 +836,8 @@ defineExpose({
 .switch-track.active {
   background: linear-gradient(135deg, #ffb3d9 0%, #ff9ab8 100%);
   border-color: #ff9ab8;
-  box-shadow: 0 4rpx 12rpx rgba(255, 154, 184, 0.3),
+  box-shadow:
+    0 4rpx 12rpx rgba(255, 154, 184, 0.3),
     inset 0 1rpx 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -818,7 +850,9 @@ defineExpose({
   top: 4rpx;
   left: 4rpx;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.15), 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 4rpx 8rpx rgba(0, 0, 0, 0.15),
+    0 2rpx 4rpx rgba(0, 0, 0, 0.1);
   border: 2rpx solid rgba(255, 255, 255, 0.8);
   transform: scale(1);
 }
@@ -827,7 +861,8 @@ defineExpose({
   left: 44rpx;
   background: linear-gradient(135deg, #ffffff 0%, #fef7f7 100%);
   transform: scale(1.05);
-  box-shadow: 0 6rpx 12rpx rgba(255, 154, 184, 0.2),
+  box-shadow:
+    0 6rpx 12rpx rgba(255, 154, 184, 0.2),
     0 2rpx 6rpx rgba(0, 0, 0, 0.1);
 }
 
@@ -939,7 +974,8 @@ defineExpose({
 
 .card:hover {
   transform: translateY(-4rpx) scale(1.02);
-  box-shadow: 0 20rpx 60rpx rgba(90, 124, 154, 0.15),
+  box-shadow:
+    0 20rpx 60rpx rgba(90, 124, 154, 0.15),
     0 8rpx 24rpx rgba(90, 124, 154, 0.1),
     inset 0 1rpx 0 rgba(255, 255, 255, 0.95);
 }
@@ -958,7 +994,8 @@ defineExpose({
   align-items: center;
   justify-content: center;
   font-size: 64rpx;
-  box-shadow: 0 8rpx 24rpx rgba(255, 154, 158, 0.25),
+  box-shadow:
+    0 8rpx 24rpx rgba(255, 154, 158, 0.25),
     0 4rpx 12rpx rgba(255, 154, 158, 0.15);
   border: 3rpx solid rgba(255, 255, 255, 0.8);
   position: relative;
@@ -1087,6 +1124,39 @@ defineExpose({
 
 .card.has-bg .card-footer {
   border-top: 1rpx solid rgba(255, 255, 255, 0.3);
+}
+
+/* 统计分析卡片 */
+.statistics-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 154, 184, 0.15) 0%,
+    rgba(168, 237, 234, 0.15) 100%
+  );
+  border: 2rpx dashed rgba(255, 107, 157, 0.3);
+}
+
+.statistics-avatar {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+}
+
+.card-badge {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  padding: 8rpx 16rpx;
+  background: linear-gradient(135deg, #ff6b9d 0%, #fecfef 100%);
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 157, 0.3);
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.badge-text {
+  font-size: 20rpx;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 1rpx;
 }
 
 .card.has-bg .card-footer::before {

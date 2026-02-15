@@ -10,6 +10,9 @@
           <text class="filter-label">📅</text>
           <text class="filter-value">{{ dateRangeText }}</text>
         </view>
+        <view class="filter-btn statistics-btn" @tap="navigateToStatistics">
+          <text class="btn-text">📊 统计</text>
+        </view>
         <view class="filter-action" @tap="resetFilter">
           <uni-icons
             custom-prefix="iconfont"
@@ -394,6 +397,20 @@ const resetFilter = () => {
   loadBills();
 };
 
+// 导航到统计分析页面
+const navigateToStatistics = () => {
+  uni.navigateTo({
+    url: `/pages/statistics/index?type=${billType.value}`,
+    fail: (err) => {
+      console.error("导航失败", err);
+      uni.showToast({
+        title: "页面跳转失败",
+        icon: "none",
+      });
+    },
+  });
+};
+
 // 加载账单数据
 const loadBills = async () => {
   if (loading.value || !hasMore.value) return;
@@ -542,12 +559,34 @@ onMounted(() => {
 
 .filter-action {
   padding: 23rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 16rpx;
   box-shadow: 0 4rpx 16rpx rgba(90, 124, 154, 0.1);
+}
+
+.filter-btn {
+  padding: 28rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(90, 124, 154, 0.1);
+}
+
+.statistics-btn {
+  background: linear-gradient(135deg, #ff9ab8 0%, #ffb3d9 100%);
+}
+
+.btn-text {
+  font-size: 26rpx;
+  color: #fff;
+  font-weight: 600;
 }
 
 .bill-list {
