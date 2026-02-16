@@ -64,8 +64,9 @@ const instance = getCurrentInstance()
 const checkIsUseNewCanvas = () => {
   if (props.forceUseOldCanvas) return false
 
-  const SDKVersion = uni.getSystemInfoSync().SDKVersion
-  const [major, minor, patch] = SDKVersion.split('.').map(n => parseInt(n, 10))
+  const appBaseInfo = wx.getAppBaseInfo()
+  const SDKVersion = appBaseInfo.SDKVersion
+  const [major, minor, patch] = SDKVersion.split('.').map((n) => parseInt(n, 10))
 
   try {
     if (major > 2) return true
@@ -81,10 +82,12 @@ const checkIsUseNewCanvas = () => {
 const init = (callback) => {
   console.log('[ec-canvas] init 开始, canvasId:', props.canvasId, 'isUseNewCanvas:', isUseNewCanvas.value, 'width:', props.width, 'height:', props.height)
 
-  const version = uni.getSystemInfoSync().version.split('.').map(n => parseInt(n, 10))
-  const isValid = version[0] > 6 || (version[0] === 6 && version[1] >= 6) || (version[0] === 6 && version[1] === 6 && version[2] >= 3)
+  const appBaseInfo = wx.getAppBaseInfo()
+  const SDKVersion = appBaseInfo.SDKVersion
+  const [major, minor, patch] = SDKVersion.split('.').map((n) => parseInt(n, 10))
+  const isValid = major > 2 || (major === 2 && minor >= 20) || (major === 2 && minor === 20 && patch >= 1)
 
-  console.log('[ec-canvas] 系统版本:', version, 'isValid:', isValid)
+  console.log('[ec-canvas] 系统版本:', SDKVersion, 'isValid:', isValid)
 
   if (!isValid) {
     console.error('微信基础库版本过低，需大于等于 2.9.0 版本。参见：https://github.com/ecomfe/echarts-for-weixin')
@@ -95,55 +98,61 @@ const init = (callback) => {
 
   if (isUseNewCanvas.value) {
     // 新版本
-    query.select('.ec-canvas').fields({ node: true, size: true }).exec((res) => {
-      console.log('[ec-canvas] 新版本 Canvas 查询结果:', res)
+    query
+      .select('.ec-canvas')
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        console.log('[ec-canvas] 新版本 Canvas 查询结果:', res)
 
-      if (!res || !res[0] || !res[0].node) {
-        console.error('[ec-canvas] 未获取到 canvas 节点')
-        return
-      }
+        if (!res || !res[0] || !res[0].node) {
+          console.error('[ec-canvas] 未获取到 canvas 节点')
+          return
+        }
 
-      const node = res[0].node
-      canvasNode.value = node
-      const canvasContext = node.getContext('2d')
-      const canvas = new WxCanvas(canvasContext, props.canvasId, true, node)
+        const node = res[0].node
+        canvasNode.value = node
+        const canvasContext = node.getContext('2d')
+        const canvas = new WxCanvas(canvasContext, props.canvasId, true, node)
 
-      ctx = canvas
+        ctx = canvas
 
-      console.log('[ec-canvas] 开始初始化 ECharts, width:', props.width, 'height:', props.height, 'dpr:', uni.getSystemInfoSync().pixelRatio)
+        console.log('[ec-canvas] 开始初始化 ECharts, width:', props.width, 'height:', props.height, 'dpr:', wx.getWindowInfo().pixelRatio)
 
-      if (typeof callback === 'function') {
-        chart.value = callback(canvas, props.width, props.height, uni.getSystemInfoSync().pixelRatio)
-      } else if (props.ec && props.ec.onInit) {
-        chart.value = props.ec.onInit(canvas, props.width, props.height, uni.getSystemInfoSync().pixelRatio)
-      }
+        if (typeof callback === 'function') {
+          chart.value = callback(canvas, props.width, props.height, wx.getWindowInfo().pixelRatio)
+        } else if (props.ec && props.ec.onInit) {
+          chart.value = props.ec.onInit(canvas, props.width, props.height, wx.getWindowInfo().pixelRatio)
+        }
 
-      console.log('[ec-canvas] ECharts 初始化完成, chart:', chart.value)
-    })
+        console.log('[ec-canvas] ECharts 初始化完成, chart:', chart.value)
+      })
   } else {
     // 旧版本
-    query.select('.ec-canvas').boundingClientRect((res) => {
-      console.log('[ec-canvas] 旧版本 Canvas 查询结果:', res)
+    query
+      .select('.ec-canvas')
+      .boundingClientRect((res) => {
+        console.log('[ec-canvas] 旧版本 Canvas 查询结果:', res)
 
-      if (!res) {
-        console.error('未获取到 canvas 信息')
-        return
-      }
-      const canvasContext = uni.createCanvasContext(props.canvasId, instance)
-      const canvas = new WxCanvas(canvasContext, props.canvasId, false)
+        if (!res) {
+          console.error('未获取到 canvas 信息')
+          return
+        }
+        const canvasContext = uni.createCanvasContext(props.canvasId, instance)
+        const canvas = new WxCanvas(canvasContext, props.canvasId, false)
 
-      ctx = canvas
+        ctx = canvas
 
-      console.log('[ec-canvas] 开始初始化 ECharts (旧版本), width:', res.width, 'height:', res.height, 'dpr:', uni.getSystemInfoSync().pixelRatio)
+        console.log('[ec-canvas] 开始初始化 ECharts (旧版本), width:', res.width, 'height:', res.height, 'dpr:', wx.getWindowInfo().pixelRatio)
 
-      if (typeof callback === 'function') {
-        chart.value = callback(canvas, res.width, res.height, uni.getSystemInfoSync().pixelRatio)
-      } else if (props.ec && props.ec.onInit) {
-        chart.value = props.ec.onInit(canvas, res.width, res.height, uni.getSystemInfoSync().pixelRatio)
-      }
+        if (typeof callback === 'function') {
+          chart.value = callback(canvas, res.width, res.height, wx.getWindowInfo().pixelRatio)
+        } else if (props.ec && props.ec.onInit) {
+          chart.value = props.ec.onInit(canvas, res.width, res.height, wx.getWindowInfo().pixelRatio)
+        }
 
-      console.log('[ec-canvas] ECharts 初始化完成 (旧版本), chart:', chart.value)
-    }).exec()
+        console.log('[ec-canvas] ECharts 初始化完成 (旧版本), chart:', chart.value)
+      })
+      .exec()
   }
 }
 
@@ -152,7 +161,8 @@ const canvasToTempFilePath = (opt) => {
   if (isUseNewCanvas.value) {
     // 新版本
     const query = uni.createSelectorQuery().in(instance)
-    query.select('.ec-canvas')
+    query
+      .select('.ec-canvas')
       .fields({ node: true, size: true })
       .exec((res) => {
         const node = res[0].node
@@ -172,7 +182,7 @@ const canvasToTempFilePath = (opt) => {
 
 // 触摸开始
 const touchStart = (e) => {
-  console.log("touchStart",e,chart.value)
+  console.log('touchStart', e, chart.value)
   if (chart.value && e.touches && e.touches.length > 0) {
     const touch = e.touches[0]
     const handler = chart.value.getZr().handler
@@ -270,8 +280,7 @@ const wrapTouch = (event) => {
 // 生命周期
 onMounted(() => {
   if (!props.ec) {
-    console.warn('组件需绑定 ec 变量，例：<ec-canvas id="mychart-dom-bar" ' +
-      'canvas-id="mychart-bar" :ec="ec"></ec-canvas>')
+    console.warn('组件需绑定 ec 变量，例：<ec-canvas id="mychart-dom-bar" ' + 'canvas-id="mychart-bar" :ec="ec"></ec-canvas>')
     return
   }
 
