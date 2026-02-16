@@ -389,7 +389,7 @@ export function generatePieChartData(distribution) {
   return {
     series: distribution.map((item) => ({
       name: item.name,
-      data: parseFloat(item.percentage),
+      data: item.value || 0,
       color: item.color,
     })),
   };
@@ -410,7 +410,7 @@ export function generateComboChartData(processedData, avgAmount) {
       {
         name: "总费用",
         data: processedData.totalAmounts,
-        type: "column",
+        type: "bar",
         color: "#ff6b9d",
       },
       {

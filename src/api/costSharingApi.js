@@ -15,7 +15,7 @@ const CLOUD_CONFIG = {
 
 let request;
 
-if (process.env.NODE_ENV !== "development") {
+if (process.env.NODE_ENV === "development") {
   // 开发环境：使用 uni.request (localhost:8080)
   // API基础URL
   const API_BASE_URL = "http://localhost:8080/api";

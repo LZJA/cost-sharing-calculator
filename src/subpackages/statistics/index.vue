@@ -10,7 +10,7 @@
         :class="{ active: billType === 'lizi' }"
         @tap="switchBillType('lizi')"
       >
-        🍐 李子账单
+        🌰 李子账单
       </view>
       <view
         class="tab"
@@ -77,45 +77,30 @@
         </view>
       </view>
 
-      <!-- 同比/环比分析 -->
+      <!-- 同比分析 -->
       <view class="comparison-container">
-        <view class="comparison-card">
-          <text class="comparison-label">环比上月</text>
-          <text
-            class="comparison-value"
-            :class="{
-              up: comparison.monthOverMonth > 0,
-              down: comparison.monthOverMonth < 0,
-            }"
-          >
-            {{
-              comparison.monthOverMonth > 0
-                ? "↑"
-                : comparison.monthOverMonth < 0
-                  ? "↓"
-                  : "-"
-            }}
-            {{ Math.abs(comparison.monthOverMonth) }}%
-          </text>
-        </view>
-        <view class="comparison-card">
-          <text class="comparison-label">同比去年</text>
-          <text
-            class="comparison-value"
-            :class="{
-              up: comparison.yearOverYear > 0,
-              down: comparison.yearOverYear < 0,
-            }"
-          >
-            {{
-              comparison.yearOverYear > 0
-                ? "↑"
-                : comparison.yearOverYear < 0
-                  ? "↓"
-                  : "-"
-            }}
-            {{ Math.abs(comparison.yearOverYear) }}%
-          </text>
+        <view class="comparison-card-new">
+          <view class="comparison-icon">📅</view>
+          <view class="comparison-content">
+            <text class="comparison-label-new">同比去年</text>
+            <text
+              class="comparison-value-new"
+              :class="{
+                up: comparison.yearOverYear > 0,
+                down: comparison.yearOverYear < 0,
+                neutral: comparison.yearOverYear === 0,
+              }"
+            >
+              <text class="comparison-arrow">{{
+                comparison.yearOverYear > 0
+                  ? "▲"
+                  : comparison.yearOverYear < 0
+                    ? "▼"
+                    : "─"
+              }}</text>
+              {{ Math.abs(comparison.yearOverYear) }}%
+            </text>
+          </view>
         </view>
       </view>
 
@@ -187,23 +172,23 @@
 
       <view class="chart-container">
         <!-- 折线图 -->
-        <view v-show="activeChartTab === 0" class="chart-wrapper">
-          <SimpleLineChart :key="chartKey" :data="lineChartData" />
+        <view v-if="activeChartTab === 0" class="chart-wrapper">
+          <EChartsLine :data="lineChartData" />
         </view>
 
         <!-- 柱状图 -->
-        <view v-show="activeChartTab === 1" class="chart-wrapper">
-          <SimpleBarChart :key="chartKey" :data="barChartData" />
+        <view v-if="activeChartTab === 1" class="chart-wrapper">
+          <EChartsBar :data="barChartData" />
         </view>
 
         <!-- 饼图 -->
-        <view v-show="activeChartTab === 2" class="chart-wrapper">
-          <SimplePieChart :key="chartKey" :data="pieChartData" />
+        <view v-if="activeChartTab === 2" class="chart-wrapper">
+          <EChartsPie :data="pieChartData" />
         </view>
 
         <!-- 组合图 -->
-        <view v-show="activeChartTab === 3" class="chart-wrapper">
-          <SimpleComboChart :key="chartKey" :data="comboChartData" />
+        <view v-if="activeChartTab === 3" class="chart-wrapper">
+          <EChartsCombo :data="comboChartData" />
         </view>
       </view>
     </scroll-view>
@@ -212,6 +197,13 @@
     <view class="bottom-share-btn" @click="showShareMenu">
       <text class="share-btn-text">📊 生成统计报告</text>
     </view>
+
+    <!-- 统计报告分享弹窗 -->
+    <ShareReportPoster
+      ref="sharePosterRef"
+      :data="reportData"
+      @close="sharePosterVisible = false"
+    />
 
     <!-- 日期选择弹窗 -->
     <view
@@ -296,24 +288,17 @@
         </view>
       </view>
     </view>
-
-    <!-- 分享报告海报组件 -->
-    <ShareReportPoster
-      v-if="sharePosterVisible"
-      :reportData="reportData"
-      @close="sharePosterVisible = false"
-    />
   </view>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, getCurrentInstance } from "vue";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
-import ShareReportPoster from "@/components/statistics/ShareReportPoster.vue";
-import SimpleLineChart from "@/components/statistics/SimpleLineChart.vue";
-import SimpleBarChart from "@/components/statistics/SimpleBarChart.vue";
-import SimplePieChart from "@/components/statistics/SimplePieChart.vue";
-import SimpleComboChart from "@/components/statistics/SimpleComboChart.vue";
+import EChartsLine from "./components/EChartsLine.vue";
+import EChartsBar from "./components/EChartsBar.vue";
+import EChartsPie from "./components/EChartsPie.vue";
+import EChartsCombo from "./components/EChartsCombo.vue";
+import ShareReportPoster from "./components/ShareReportPoster.vue";
 
 import {
   fetchStatisticsData,
@@ -332,6 +317,12 @@ import {
 } from "@/utils/statisticsHelper.js";
 import { formatAmount } from "@/utils/helpers.js";
 import dayjs from "dayjs";
+
+// 获取 URL 参数
+const instance = getCurrentInstance();
+const pageParams = ref({
+  type: "lizi",
+});
 
 // 账单类型
 const billType = ref("lizi");
@@ -379,7 +370,6 @@ const metrics = ref({
 });
 
 const comparison = ref({
-  monthOverMonth: 0,
   yearOverYear: 0,
 });
 
@@ -405,6 +395,7 @@ const comboChartData = ref({});
 // 分享
 const sharePosterVisible = ref(false);
 const reportData = ref({});
+const sharePosterRef = ref(null);
 
 // 日期区间文本
 const dateRangeText = computed(() => formatDateRangeText(filterParams.value));
@@ -457,11 +448,9 @@ const loadData = async () => {
     // 计算核心指标
     metrics.value = calculateCoreMetrics(processed.sortedBills);
 
-    // 计算同比环比
+    // 计算同比
     const currentMonth =
       processed.sortedBills[processed.sortedBills.length - 1];
-    const previousMonth =
-      processed.sortedBills[processed.sortedBills.length - 2] || null;
     const lastYearMonth = findBillByMonth(
       processed.sortedBills,
       currentMonth.year - 1,
@@ -470,7 +459,7 @@ const loadData = async () => {
 
     comparison.value = calculateComparison(
       currentMonth,
-      previousMonth,
+      null, // 不需要环比数据
       lastYearMonth,
     );
 
@@ -600,11 +589,22 @@ const applyDateFilter = () => {
 
 // 显示分享菜单
 const showShareMenu = () => {
-  sharePosterVisible.value = true;
+  if (sharePosterRef.value) {
+    sharePosterRef.value.show();
+  }
 };
 
 // 页面加载
 onMounted(() => {
+  // 获取页面参数
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const options = currentPage.options || {};
+
+  if (options.type && (options.type === "lizi" || options.type === "gezi")) {
+    billType.value = options.type;
+  }
+
   initYearOptions();
   // 设置默认为最近12个月
   setLast12Months();
@@ -621,19 +621,6 @@ defineExpose({
 .container {
   min-height: 100vh;
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #ffecd2 100%);
-}
-
-.header-action {
-  padding: 16rpx 32rpx;
-  background: linear-gradient(135deg, #ff9ab8 0%, #ffb3d9 100%);
-  border-radius: 44rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255, 154, 184, 0.3);
-}
-
-.action-text {
-  font-size: 28rpx;
-  color: #fff;
-  font-weight: 600;
 }
 
 .type-tabs {
@@ -722,7 +709,7 @@ defineExpose({
 .content {
   height: calc(
     100vh - 320rpx - var(--status-bar-height) -
-      194rpx - env(safe-area-inset-bottom)
+      210rpx - env(safe-area-inset-bottom)
   );
   padding: 0 24rpx 24rpx;
   box-sizing: border-box;
@@ -788,41 +775,72 @@ defineExpose({
 }
 
 .comparison-container {
-  display: flex;
-  gap: 16rpx;
   margin-bottom: 24rpx;
 }
 
-.comparison-card {
-  flex: 1;
-  padding: 24rpx;
-  background: rgba(255, 255, 255, 0.8);
+.comparison-card-new {
+  padding: 28rpx 32rpx;
+  background: linear-gradient(
+    135deg,
+    rgba(168, 237, 234, 0.3) 0%,
+    rgba(254, 214, 227, 0.3) 100%
+  );
+  backdrop-filter: blur(10px);
   border-radius: 24rpx;
-  box-shadow: 0 8rpx 24rpx rgba(90, 124, 154, 0.1);
+  box-shadow: 0 8rpx 24rpx rgba(90, 124, 154, 0.08);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12rpx;
+  gap: 20rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
 
-.comparison-label {
-  font-size: 26rpx;
-  color: #6b7c93;
+.comparison-icon {
+  font-size: 40rpx;
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 20rpx;
+}
+
+.comparison-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.comparison-label-new {
+  font-size: 24rpx;
+  color: #7c95aa;
   font-weight: 500;
 }
 
-.comparison-value {
-  font-size: 36rpx;
+.comparison-value-new {
+  font-size: 32rpx;
   font-weight: 700;
   color: #5a7c9a;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
 }
 
-.comparison-value.up {
+.comparison-arrow {
+  font-size: 24rpx;
+}
+
+.comparison-value-new.up {
   color: #ff6b9d;
 }
 
-.comparison-value.down {
+.comparison-value-new.down {
   color: #6bcf7f;
+}
+
+.comparison-value-new.neutral {
+  color: #7c95aa;
 }
 
 .split-container,
@@ -853,7 +871,7 @@ defineExpose({
 .distribution-item {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 16rpx;
 }
 
 .split-info,
@@ -875,6 +893,7 @@ defineExpose({
   font-size: 28rpx;
   color: #5a7c9a;
   font-weight: 600;
+  margin-right: 16rpx;
 }
 
 .split-progress,
@@ -903,6 +922,7 @@ defineExpose({
   font-size: 24rpx;
   color: #7c95aa;
   text-align: right;
+  padding-top: 4rpx;
 }
 
 .chart-tabs {
@@ -939,7 +959,7 @@ defineExpose({
 }
 
 .chart-wrapper {
-  height: 400rpx;
+  min-height: 400rpx;
   display: flex;
   justify-content: center;
   align-items: center;

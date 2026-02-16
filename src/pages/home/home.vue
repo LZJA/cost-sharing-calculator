@@ -260,7 +260,7 @@ const navigateToGezi = () => {
 // 导航到统计分析页面
 const navigateToStatistics = () => {
   uni.navigateTo({
-    url: "/pages/statistics/index",
+    url: "/subpackages/statistics/index",
     fail: (err) => {
       console.error("导航失败", err);
       uni.showToast({

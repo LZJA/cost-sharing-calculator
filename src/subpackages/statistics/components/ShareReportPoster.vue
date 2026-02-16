@@ -1,9 +1,5 @@
 <template>
-  <view
-    class="share-report-poster-container"
-    v-if="visible"
-    @touchmove.stop.prevent
-  >
+  <view class="share-poster-container" v-if="visible" @touchmove.stop.prevent>
     <view class="mask" @click="close"></view>
     <view class="content">
       <canvas
@@ -21,20 +17,20 @@
 </template>
 
 <script setup>
-import { ref, watch, getCurrentInstance } from "vue";
+import { ref, getCurrentInstance } from "vue";
 
 const props = defineProps({
-  reportData: {
+  data: {
     type: Object,
-    default: () => ({}),
+    required: true,
   },
 });
 
 const emit = defineEmits(["close"]);
 
 const visible = ref(false);
-const canvasWidth = ref(300);
-const canvasHeight = ref(600);
+const canvasWidth = ref(320);
+const canvasHeight = ref(560);
 const tempFilePath = ref("");
 
 const instance = getCurrentInstance();
@@ -42,7 +38,7 @@ const instance = getCurrentInstance();
 const show = () => {
   visible.value = true;
   setTimeout(() => {
-    drawReport();
+    drawPoster();
   }, 100);
 };
 
@@ -51,13 +47,20 @@ const close = () => {
   emit("close");
 };
 
-const drawReport = () => {
+const drawPoster = () => {
   const ctx = uni.createCanvasContext("reportCanvas", instance);
   const w = canvasWidth.value;
   const h = canvasHeight.value;
-  const { reportData } = props;
+  const {
+    billType,
+    dateRange,
+    metrics,
+    comparison,
+    splitStatistics,
+    costDistribution,
+  } = props.data;
 
-  // 绘制渐变背景
+  // Background gradient
   const gradient = ctx.createLinearGradient(0, 0, w, h);
   gradient.addColorStop(0, "#a8edea");
   gradient.addColorStop(0.5, "#fed6e3");
@@ -65,112 +68,93 @@ const drawReport = () => {
   ctx.setFillStyle(gradient);
   ctx.fillRect(0, 0, w, h);
 
-  // 绘制白色卡片
+  // White Card
   ctx.setFillStyle("rgba(255, 255, 255, 0.95)");
   ctx.setShadow(0, 10, 20, "rgba(0, 0, 0, 0.1)");
   const padding = 20;
-  const cardY = 60;
+  const cardY = 70;
   const cardH = h - cardY - 60;
   roundRect(ctx, padding, cardY, w - padding * 2, cardH, 15);
   ctx.fill();
   ctx.setShadow(0, 0, 0, "transparent");
 
-  // 标题
-  ctx.setFontSize(20);
+  // Title
+  ctx.setFontSize(22);
   ctx.setFillStyle("#5a7c9a");
   ctx.setTextAlign("center");
-  ctx.fillText("统计分析报告", w / 2, 40);
+  const typeText = billType === "lizi" ? "🌰 李子账单" : "🕊️ 鸽子账单";
+  ctx.fillText(`${typeText} 统计报告`, w / 2, 40);
 
-  // 日期区间
-  ctx.setFontSize(14);
-  ctx.setFillStyle("#6b8aa6");
-  ctx.fillText(reportData.dateRange || "", w / 2, cardY + 30);
-
-  // 内容
-  let y = cardY + 60;
-  const leftX = padding + 20;
-  const rightX = w - padding - 20;
-
-  // 核心指标
-  ctx.setFontSize(14);
-  ctx.setFillStyle("#3e627f");
-  ctx.setTextAlign("left");
-  ctx.fillText("💰 总支出", leftX, y);
-  ctx.setTextAlign("right");
-  ctx.setFillStyle("#ff6b9d");
-  ctx.fillText(
-    `¥${formatNum(reportData.metrics?.totalExpense || 0)}`,
-    rightX,
-    y,
-  );
-  y += 30;
-
-  ctx.setTextAlign("left");
-  ctx.setFillStyle("#3e627f");
-  ctx.fillText("📊 月均支出", leftX, y);
-  ctx.setTextAlign("right");
-  ctx.setFillStyle("#a8edea");
-  ctx.fillText(`¥${formatNum(reportData.metrics?.avgMonthly || 0)}`, rightX, y);
-  y += 30;
-
-  // 分隔线
-  y += 10;
-  ctx.setStrokeStyle("#e0e0e0");
-  ctx.setLineDash([5, 5]);
-  ctx.beginPath();
-  ctx.moveTo(leftX, y);
-  ctx.lineTo(rightX, y);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  y += 30;
-
-  // 分摊统计标题
-  ctx.setFontSize(14);
-  ctx.setFillStyle("#3e627f");
-  ctx.setTextAlign("left");
-  ctx.fillText("💰 分摊费用统计", leftX, y);
-  y += 30;
-
-  // 分摊统计列表
-  const splitList = reportData.splitStatistics || [];
-  splitList.forEach((item) => {
-    ctx.setFontSize(12);
-    ctx.setFillStyle("#6b7c93");
-    ctx.setTextAlign("left");
-    ctx.fillText(item.name, leftX, y);
-
-    ctx.setTextAlign("right");
-    ctx.setFillStyle("#5a7c9a");
-    ctx.fillText(`¥${formatNum(item.amount)} (${item.percentage}%)`, rightX, y);
-    y += 25;
-  });
-
-  // 费用占比
-  y += 15;
-  ctx.setFontSize(14);
-  ctx.setFillStyle("#3e627f");
-  ctx.setTextAlign("left");
-  ctx.fillText("📊 费用类型占比", leftX, y);
-  y += 30;
-
-  const distList = reportData.costDistribution || [];
-  distList.forEach((item) => {
-    ctx.setFontSize(12);
-    ctx.setFillStyle("#6b7c93");
-    ctx.setTextAlign("left");
-    ctx.fillText(item.name, leftX, y);
-
-    ctx.setTextAlign("right");
-    ctx.setFillStyle("#5a7c9a");
-    ctx.fillText(`¥${formatNum(item.value)} (${item.percentage}%)`, rightX, y);
-    y += 25;
-  });
-
-  // 底部
+  // Date range
   ctx.setFontSize(12);
+  ctx.setFillStyle("#7c95aa");
+  ctx.fillText(dateRange || "-", w / 2, 58);
+
+  // Content
+  let y = cardY + 35;
+  const leftX = padding + 15;
+  const rightX = w - padding - 15;
+  const lineHeight = 26;
+
+  // Section titles
+  const drawSectionTitle = (title) => {
+    ctx.setFontSize(13);
+    ctx.setFillStyle("#5a7c9a");
+    ctx.setTextAlign("left");
+    ctx.fillText(title, leftX, y);
+    y += lineHeight - 5;
+  };
+
+  // Draw row helper
+  const drawRow = (label, value, color = "#6b7c93", isBold = false) => {
+    ctx.setFontSize(11);
+    ctx.setFillStyle("#6b7c93");
+    ctx.setTextAlign("left");
+    ctx.fillText(label, leftX + 5, y);
+
+    ctx.setFontSize(isBold ? 13 : 11);
+    ctx.setFillStyle(color);
+    ctx.setTextAlign("right");
+    ctx.fillText(value, rightX, y);
+    y += lineHeight - 3;
+  };
+
+  // Core metrics section
+  drawSectionTitle("📊 核心指标");
+  drawRow("总支出", `¥${formatNumber(metrics.totalExpense)}`, "#ff6b9d", true);
+  drawRow("月均支出", `¥${formatNumber(metrics.avgMonthly)}`, "#5a7c9a", true);
+  drawRow("最高月份", `${metrics.maxMonth.month} ¥${formatNumber(metrics.maxMonth.amount)}`);
+  drawRow("最低月份", `${metrics.minMonth.month} ¥${formatNumber(metrics.minMonth.amount)}`);
+
+  // Year over year comparison
+  if (comparison && comparison.yearOverYear !== undefined) {
+    y += 5;
+    const yoyColor = comparison.yearOverYear > 0 ? "#ff6b9d" : comparison.yearOverYear < 0 ? "#6bcf7f" : "#7c95aa";
+    const yoyArrow = comparison.yearOverYear > 0 ? "↑" : comparison.yearOverYear < 0 ? "↓" : "-";
+    drawRow("同比去年", `${yoyArrow} ${Math.abs(comparison.yearOverYear)}%`, yoyColor, true);
+  }
+
+  y += 8;
+
+  // Split statistics
+  drawSectionTitle("💰 分摊费用统计");
+  splitStatistics.forEach((item) => {
+    drawRow(item.name, `¥${formatNumber(item.amount)}  |  ${item.percentage}%`);
+  });
+
+  y += 8;
+
+  // Cost distribution
+  drawSectionTitle("📊 费用类型占比");
+  costDistribution.forEach((item) => {
+    drawRow(item.name, `¥${formatNumber(item.value)}  |  ${item.percentage}%`);
+  });
+
+  // Footer
+  ctx.setFontSize(10);
   ctx.setFillStyle("#999");
   ctx.setTextAlign("center");
-  ctx.fillText("分账计算器 - 让合租生活更简单", w / 2, h - 20);
+  ctx.fillText("水电燃气费分账计算器", w / 2, h - 15);
 
   ctx.draw(false, () => {
     uni.canvasToTempFilePath(
@@ -183,9 +167,14 @@ const drawReport = () => {
           console.error("生成图片失败", err);
         },
       },
-      instance,
+      instance
     );
   });
+};
+
+const formatNumber = (num) => {
+  if (typeof num !== "number") return "0";
+  return num.toFixed(2);
 };
 
 const roundRect = (ctx, x, y, w, h, r) => {
@@ -198,10 +187,6 @@ const roundRect = (ctx, x, y, w, h, r) => {
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
-};
-
-const formatNum = (num) => {
-  return (num || 0).toFixed(2);
 };
 
 const saveImage = () => {
@@ -258,29 +243,19 @@ const shareToWeChat = () => {
   });
 };
 
-watch(
-  () => props.reportData,
-  () => {
-    if (visible.value) {
-      drawReport();
-    }
-  },
-  { deep: true },
-);
-
 defineExpose({
   show,
 });
 </script>
 
 <style lang="scss" scoped>
-.share-report-poster-container {
+.share-poster-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 88;
+  z-index: 999;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -297,18 +272,15 @@ defineExpose({
 
 .content {
   position: relative;
-  z-index: 88;
+  z-index: 999;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-sizing: border-box;
 }
 
 .canvas {
-  width: 300px;
-  height: 600px;
-  border-radius: 16rpx;
-  overflow: hidden;
+  box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.2);
+  border-radius: 24rpx;
 }
 
 .btn-group {

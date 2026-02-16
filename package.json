@@ -15,7 +15,6 @@
     "@dcloudio/uni-ui": "^1.5.7",
     "@vueuse/core": "^9",
     "dayjs": "^1.11.13",
-    "echarts-for-weixin": "^1.0.2",
     "pinia": "^2.3.1",
     "pinia-plugin-persistedstate": "^4.2.0",
     "vue": "^3.4.21"

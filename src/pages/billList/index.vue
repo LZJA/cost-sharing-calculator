@@ -400,7 +400,7 @@ const resetFilter = () => {
 // 导航到统计分析页面
 const navigateToStatistics = () => {
   uni.navigateTo({
-    url: `/pages/statistics/index?type=${billType.value}`,
+    url: `/subpackages/statistics/index?type=${billType.value}`,
     fail: (err) => {
       console.error("导航失败", err);
       uni.showToast({

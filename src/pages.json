@@ -38,13 +38,20 @@
         "navigationStyle": "custom",
         "navigationBarTitleText": "账单列表"
       }
-    },
+    }
+  ],
+  "subPackages": [
     {
-      "path": "pages/statistics/index",
-      "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "统计分析"
-      }
+      "root": "subpackages/statistics",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationStyle": "custom",
+            "navigationBarTitleText": "统计分析"
+          }
+        }
+      ]
     }
   ],
   "globalStyle": {
