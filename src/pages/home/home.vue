@@ -151,6 +151,8 @@ const cropImage = (imagePath, cardType) => {
 // 设置卡片背景
 const setCardBackground = async (tempFilePath, calculatorId) => {
   try {
+    const card = calculators.value.find((item) => String(item.id) === String(calculatorId));
+    if (!card) throw new Error("计算器不存在，请刷新后重试");
     uni.showLoading({ title: "上传中..." });
 
     // 上传到云存储
@@ -159,27 +161,21 @@ const setCardBackground = async (tempFilePath, calculatorId) => {
       quality: 60,
       needCompress: true,
     });
-    const card = calculators.value.find((item) => item.id === calculatorId);
-    if (!card) return;
-    // 删除旧背景图
-    if (card.background?.startsWith("cloud://")) {
-      await deleteFromCloud(card.background);
-    }
-
-    // 保存云文件ID
-    card.background = fileID;
-    card.enableBackground = true;
-
-    await api.calculator.update(calculatorId, {
+    const oldBackground = card.background;
+    await api.calculator.update(card.id, {
       name: card.name,
       description: card.description,
       avatar: card.avatar,
-      background: card.background,
+      background: fileID,
       enableBackground: true,
       config: card.config,
     });
-
-    uni.hideLoading();
+    card.background = fileID;
+    card.enableBackground = true;
+    // 新背景保存成功后再清理旧文件，避免保存失败时丢失原背景。
+    if (oldBackground?.startsWith("cloud://") && oldBackground !== fileID) {
+      deleteFromCloud(oldBackground).catch((error) => console.error("清理旧背景失败", error));
+    }
     uni.showToast({ title: "设置成功", icon: "success" });
   } catch (error) {
     console.error("设置背景失败", error);
@@ -187,6 +183,8 @@ const setCardBackground = async (tempFilePath, calculatorId) => {
       title: "设置背景失败，请重试",
       icon: "none",
     });
+  } finally {
+    uni.hideLoading();
   }
 };
 

@@ -1,7 +1,7 @@
 <template>
   <view class="share-poster-container" v-if="visible" @touchmove.stop.prevent>
     <view class="mask" @click="close"></view>
-    <view class="content">
+    <view class="content" @touchmove.stop>
       <canvas
         canvas-id="shareCanvas"
         id="shareCanvas"
@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, getCurrentInstance } from "vue";
+import { computed, ref, nextTick, getCurrentInstance } from "vue";
 
 const props = defineProps({
   data: {
@@ -30,17 +30,16 @@ const emit = defineEmits(["close"]);
 
 const visible = ref(false);
 const canvasWidth = ref(300);
-const canvasHeight = ref(500);
+const canvasHeight = computed(() => Math.max(500, 380 + (props.data.shares || []).length * 30));
 const tempFilePath = ref("");
 
 const instance = getCurrentInstance();
 
-const show = () => {
+const show = async () => {
+  tempFilePath.value = "";
   visible.value = true;
-  // Wait for DOM update
-  setTimeout(() => {
-    drawPoster();
-  }, 100);
+  await nextTick();
+  drawPoster();
 };
 
 const close = () => {
@@ -266,12 +265,19 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .btn-group {
+  flex-shrink: 0;
   margin-top: 30rpx;
   display: flex;
   gap: 20rpx;
+}
+
+.canvas {
+  flex-shrink: 0;
 }
 
 .btn {

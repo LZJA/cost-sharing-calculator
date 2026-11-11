@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 迁移旧数据时用的默认规则，与当前后端实际算法一致。
- * 李子：房主先拿走总费用的「居住天数占比 / 2」，剩下的两人平分。
+ * 迁移旧数据时用的默认规则。历史账单金额不重算。
+ * 李子：房主承担「总费用 × 居住天数占比 / 总人数」，剩余费用由其他人按配置比例分摊。
  * 鸽子：水费和燃气费四人均摊；电费李子、鸽子各 1/6，春风、橙子各 1/3。
  * 特殊分账在普通分账之后，把橙子当前金额的一半对半转给李子和鸽子。
  */
@@ -23,7 +23,7 @@ public final class DefaultConfigs {
         ));
 
         StepConfig ownerStep = share("total", true, List.of(
-                daysShare("owner", new BigDecimal("0.5"))
+                daysShare("owner", BigDecimal.ONE)
         ));
         StepConfig restStep = share("remainder:total", false, List.of(
                 fixed("sister", 1),
@@ -99,8 +99,30 @@ public final class DefaultConfigs {
         ShareConfig share = new ShareConfig();
         share.setMember(member);
         share.setWeight(weight);
-        share.setBasis("days/totalDays");
+        share.setBasis(CalculatorConfigValidator.STAY_DAYS_PER_MEMBER);
         return share;
+    }
+
+    /** 修复上一版本迁移生成的房主 /2 规则，保留人员资料及其余人员的分摊比例。 */
+    public static boolean upgradeLegacyLiziOwnerRule(CalculatorConfig config) {
+        if (config == null || config.getRules() == null) return false;
+        boolean changed = false;
+        for (RuleConfig rule : config.getRules()) {
+            if (rule == null || rule.getSteps() == null) continue;
+            for (StepConfig step : rule.getSteps()) {
+                if (step == null || !"share".equals(step.getType()) || !"total".equals(step.getSource())
+                        || !Boolean.TRUE.equals(step.getPartial()) || step.getShares() == null || step.getShares().size() != 1) continue;
+                ShareConfig share = step.getShares().get(0);
+                if (share != null && "owner".equals(share.getMember())
+                        && CalculatorConfigValidator.STAY_DAYS.equals(share.getBasis())
+                        && share.getWeight() != null && share.getWeight().compareTo(new BigDecimal("0.5")) == 0) {
+                    share.setBasis(CalculatorConfigValidator.STAY_DAYS_PER_MEMBER);
+                    share.setWeight(BigDecimal.ONE);
+                    changed = true;
+                }
+            }
+        }
+        return changed;
     }
 
     private static StepConfig share(String source, boolean partial, List<ShareConfig> shares) {

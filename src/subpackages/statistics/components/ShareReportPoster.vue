@@ -1,7 +1,7 @@
 <template>
   <view class="share-poster-container" v-if="visible" @touchmove.stop.prevent>
     <view class="mask" @click="close"></view>
-    <view class="content">
+    <view class="content" @touchmove.stop>
       <canvas
         canvas-id="reportCanvas"
         id="reportCanvas"
@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from "vue";
+import { computed, ref, nextTick, getCurrentInstance } from "vue";
 
 const props = defineProps({
   data: {
@@ -30,16 +30,17 @@ const emit = defineEmits(["close"]);
 
 const visible = ref(false);
 const canvasWidth = ref(320);
-const canvasHeight = ref(560);
+const canvasHeight = computed(() => Math.max(560,
+  350 + (props.data.splitStatistics || []).length * 23 + (props.data.costDistribution || []).length * 23));
 const tempFilePath = ref("");
 
 const instance = getCurrentInstance();
 
-const show = () => {
+const show = async () => {
+  tempFilePath.value = "";
   visible.value = true;
-  setTimeout(() => {
-    drawPoster();
-  }, 100);
+  await nextTick();
+  drawPoster();
 };
 
 const close = () => {
@@ -275,14 +276,18 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .canvas {
+  flex-shrink: 0;
   box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.2);
   border-radius: 24rpx;
 }
 
 .btn-group {
+  flex-shrink: 0;
   margin-top: 30rpx;
   display: flex;
   gap: 20rpx;

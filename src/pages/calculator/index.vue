@@ -50,7 +50,7 @@
       </view>
 
       <view class="button-group">
-        <button class="btn btn-primary" @tap="calculateBill">计算费用</button>
+        <button class="btn btn-primary" :loading="calculating" :disabled="calculating" @tap="calculateBill">计算费用</button>
       </view>
 
       <text v-if="errorMessage" class="error">{{ errorMessage }}</text>
@@ -78,13 +78,12 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import dayjs from "dayjs";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
 import api from "@/api/costSharingApi.js";
-import { calculateShares } from "@/utils/formula.js";
 
 const calculator = ref({});
 const config = computed(() => calculator.value.config || { members: [], rules: [], useStayDays: false });
@@ -93,7 +92,7 @@ const currentYear = dayjs().year();
 const yearOptions = Array.from({ length: 10 }, (_, i) => `${currentYear - i}年`);
 const monthOptions = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
 const yearIndex = ref(0);
-const monthIndex = ref(0);
+const monthIndex = ref(dayjs().month());
 const ruleIndex = ref(0);
 
 const form = ref({
@@ -106,18 +105,20 @@ const form = ref({
   gasBill: "",
 });
 
-const shares = ref([]);
+const savedBill = ref(null);
+const shares = computed(() => savedBill.value?.shares || []);
+const calculating = ref(false);
 const showResult = ref(false);
 const errorMessage = ref("");
 const sharePosterRef = ref(null);
 
 const ruleNames = computed(() => config.value.rules.map((rule) => rule.name));
-const totalAmount = computed(
-  () =>
-    (parseFloat(form.value.waterBill) || 0) +
-    (parseFloat(form.value.electricBill) || 0) +
-    (parseFloat(form.value.gasBill) || 0)
-);
+const totalAmount = computed(() => Number(savedBill.value?.totalAmount || 0));
+let inputVersion = 0;
+watch([form, ruleIndex], () => {
+  inputVersion += 1;
+  showResult.value = false;
+}, { deep: true, flush: "sync" });
 
 const onYearChange = (event) => {
   yearIndex.value = Number(event.detail.value);
@@ -138,20 +139,15 @@ const viewBillList = () => {
 };
 
 const calculateBill = async () => {
+  if (calculating.value) return;
+  calculating.value = true;
   errorMessage.value = "";
   showResult.value = false;
   const ruleName = config.value.rules[ruleIndex.value]?.name;
+  const version = inputVersion;
   try {
-    shares.value = calculateShares(config.value, ruleName, form.value);
-    showResult.value = true;
-  } catch (error) {
-    errorMessage.value = error.message;
-    return;
-  }
-
-  // 展示用上面的即时结果，落库金额由后端按同一套规则重算
-  try {
-    await api.bill.save({
+    // 展示、海报和入账共用服务端返回的账单，避免两套公式产生不同金额。
+    const bill = await api.bill.save({
       calculatorId: calculator.value.id,
       year: form.value.year,
       month: form.value.month,
@@ -162,16 +158,22 @@ const calculateBill = async () => {
       ownerDays: config.value.useStayDays ? form.value.ownerDays : null,
       ruleName,
     });
+    if (version === inputVersion) {
+      savedBill.value = bill;
+      showResult.value = true;
+    }
   } catch (error) {
-    console.error("保存账单失败", error);
+    errorMessage.value = error.message || "计算或保存失败，请重试";
+  } finally {
+    calculating.value = false;
   }
 };
 
 const posterData = computed(() => ({
-  month: form.value.month,
-  waterBill: form.value.waterBill || 0,
-  electricBill: form.value.electricBill || 0,
-  gasBill: form.value.gasBill || 0,
+  month: savedBill.value?.month,
+  waterBill: savedBill.value?.waterBill || 0,
+  electricBill: savedBill.value?.electricBill || 0,
+  gasBill: savedBill.value?.gasBill || 0,
   shares: shares.value.map((share) => ({
     ...share,
     amount: share.amount.toFixed(2),

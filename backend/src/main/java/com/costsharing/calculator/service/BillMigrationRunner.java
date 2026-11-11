@@ -1,6 +1,7 @@
 package com.costsharing.calculator.service;
 
 import com.costsharing.calculator.entity.Bill;
+import com.costsharing.calculator.entity.BillMigration;
 import com.costsharing.calculator.entity.Calculator;
 import com.costsharing.calculator.entity.Card;
 import com.costsharing.calculator.entity.GeziBill;
@@ -8,6 +9,7 @@ import com.costsharing.calculator.entity.LiziBill;
 import com.costsharing.calculator.formula.DefaultConfigs;
 import com.costsharing.calculator.formula.ShareResult;
 import com.costsharing.calculator.repository.BillRepository;
+import com.costsharing.calculator.repository.BillMigrationRepository;
 import com.costsharing.calculator.repository.CalculatorRepository;
 import com.costsharing.calculator.repository.CardRepository;
 import com.costsharing.calculator.repository.GeziBillRepository;
@@ -21,10 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 启动时把旧的李子、鸽子账单搬进通用账单表。
- * 每个来源只搬一次：对应计算器已经有账单就跳过。旧表保留不删。
+ * 每个来源只搬一次：迁移标记与导入数据在同一事务里提交。旧表保留不删。
  * 金额直接用旧列里存好的数，不重新计算，避免四舍五入和历史算法不一致。
  */
 @Slf4j
@@ -37,21 +40,32 @@ public class BillMigrationRunner implements ApplicationRunner {
     private final LiziBillRepository liziBillRepository;
     private final GeziBillRepository geziBillRepository;
     private final CardRepository cardRepository;
+    private final BillMigrationRepository migrationRepository;
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         migrateLizi();
         migrateGezi();
+        upgradeLiziOwnerRule();
+    }
+
+    private void upgradeLiziOwnerRule() {
+        if (migrationRepository.existsById("lizi-rule")) return;
+        calculatorRepository.findByLegacyKey("lizi").ifPresent(existing -> {
+            if (DefaultConfigs.upgradeLegacyLiziOwnerRule(existing.getConfig())) {
+                calculatorRepository.save(existing);
+                log.info("已修正李子房主规则为按居住天数占比和总人数分摊，历史账单金额不变");
+            }
+        });
+        // 只修正一次，后续用户主动调整的规则不能在重启时被覆盖。
+        migrationRepository.save(new BillMigration("lizi-rule"));
     }
 
     private void migrateLizi() {
-        Calculator calculator = calculatorRepository.findByLegacyKey("lizi")
-                .orElseGet(() -> createCalculator("lizi", "李子的分账计算器", "分账让生活更简单", "🌰"));
-        if (billRepository.countByCalculatorId(calculator.getId()) > 0) {
-            log.info("李子账单已迁移过，跳过");
-            return;
-        }
+        Calculator calculator = calculatorToMigrate("lizi", "李子的分账计算器", "分账让生活更简单", "🌰")
+                .orElse(null);
+        if (calculator == null) return;
 
         List<LiziBill> source = liziBillRepository.findAll();
         BigDecimal oldTotal = BigDecimal.ZERO;
@@ -75,15 +89,13 @@ public class BillMigrationRunner implements ApplicationRunner {
         if (oldTotal.compareTo(newTotal) != 0) {
             log.warn("李子账单迁移后总额不一致：旧 {}，新 {}", oldTotal, newTotal);
         }
+        migrationRepository.save(new BillMigration("lizi"));
     }
 
     private void migrateGezi() {
-        Calculator calculator = calculatorRepository.findByLegacyKey("gezi")
-                .orElseGet(() -> createCalculator("gezi", "鸽子的分账计算器", "记录每一份美好小账单", "🕊️"));
-        if (billRepository.countByCalculatorId(calculator.getId()) > 0) {
-            log.info("鸽子账单已迁移过，跳过");
-            return;
-        }
+        Calculator calculator = calculatorToMigrate("gezi", "鸽子的分账计算器", "记录每一份美好小账单", "🕊️")
+                .orElse(null);
+        if (calculator == null) return;
 
         List<GeziBill> source = geziBillRepository.findAll();
         BigDecimal oldTotal = BigDecimal.ZERO;
@@ -106,6 +118,19 @@ public class BillMigrationRunner implements ApplicationRunner {
         if (oldTotal.compareTo(newTotal) != 0) {
             log.warn("鸽子账单迁移后总额不一致：旧 {}，新 {}", oldTotal, newTotal);
         }
+        migrationRepository.save(new BillMigration("gezi"));
+    }
+
+    private Optional<Calculator> calculatorToMigrate(String source, String name, String description, String avatar) {
+        if (migrationRepository.existsById(source)) return Optional.empty();
+        // 兼容已部署的旧迁移版本：legacyKey 计算器只能由迁移事务创建，
+        // 已存在就说明之前已提交迁移，即使用户后来删光了账单也不能再次导入。
+        if (calculatorRepository.findByLegacyKey(source).isPresent()) {
+            migrationRepository.save(new BillMigration(source));
+            log.info("补记 {} 账单迁移标记", source);
+            return Optional.empty();
+        }
+        return Optional.of(createCalculator(source, name, description, avatar));
     }
 
     private Calculator createCalculator(String legacyKey, String defaultName, String defaultDescription, String defaultAvatar) {

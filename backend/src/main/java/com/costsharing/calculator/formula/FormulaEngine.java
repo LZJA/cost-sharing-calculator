@@ -3,213 +3,149 @@ package com.costsharing.calculator.formula;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
-/**
- * 按配置好的步骤计算每人应承担的金额。
- * 只认识 share（按份额分一项费用）和 transfer（把某人金额的一个比例转给其他人），
- * 不执行任意表达式。
- */
+/** 按配置分摊费用。试算、入账和海报共用这个计算入口。 */
 public final class FormulaEngine {
+    private static final BigDecimal CENT = new BigDecimal("0.01");
 
-    private static final int MONEY_SCALE = 2;
-
-    private FormulaEngine() {
-    }
+    private FormulaEngine() {}
 
     public static List<ShareResult> calculate(CalculatorConfig config, String ruleName, BillInput input) {
-        if (config == null || config.getMembers() == null || config.getMembers().isEmpty()) {
-            throw new IllegalArgumentException("计算器没有配置人员");
-        }
+        CalculatorConfigValidator.validate(config);
+        if (input == null) throw new IllegalArgumentException("请填写账单费用");
+        BillInput normalized = new BillInput(fee(input.getWaterBill()), fee(input.getElectricBill()),
+                fee(input.getGasBill()), input.getTotalDays(), input.getOwnerDays());
         RuleConfig rule = findRule(config, ruleName);
-
         Map<String, BigDecimal> amounts = new LinkedHashMap<>();
-        for (MemberConfig member : config.getMembers()) {
-            amounts.put(member.getKey(), BigDecimal.ZERO);
-        }
-
-        // 上一个「只取一部分」的步骤没有分完的金额，按费用来源记下，给后面的 remainder 步骤用。
+        config.getMembers().forEach(member -> amounts.put(member.getKey(), new BigDecimal("0.00")));
         Map<String, BigDecimal> remainders = new LinkedHashMap<>();
-
-        if (rule.getSteps() != null) {
-            for (StepConfig step : rule.getSteps()) {
-                applyStep(step, config, input, amounts, remainders);
-            }
+        for (StepConfig step : rule.getSteps()) {
+            if ("share".equals(step.getType())) applyShare(step, config, normalized, amounts, remainders);
+            else applyTransfer(step, amounts);
         }
-
-        List<ShareResult> results = new ArrayList<>();
-        for (MemberConfig member : config.getMembers()) {
-            results.add(new ShareResult(
-                    member.getKey(),
-                    member.getName(),
-                    member.getEmoji(),
-                    money(amounts.get(member.getKey()))
-            ));
-        }
+        List<ShareResult> results = config.getMembers().stream().map(member -> new ShareResult(
+                member.getKey(), member.getName(), member.getEmoji(), amounts.get(member.getKey()))).toList();
+        BigDecimal total = normalized.getWaterBill().add(normalized.getElectricBill()).add(normalized.getGasBill());
+        BigDecimal distributed = amounts.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (distributed.compareTo(total) != 0) throw new IllegalArgumentException("分摊金额合计与总费用不一致，请检查规则");
         return results;
     }
 
-    private static RuleConfig findRule(CalculatorConfig config, String ruleName) {
-        if (config.getRules() == null || config.getRules().isEmpty()) {
-            throw new IllegalArgumentException("计算器没有配置规则");
-        }
-        if (ruleName == null || ruleName.isBlank()) {
-            if (config.getRules().size() == 1) {
-                return config.getRules().get(0);
-            }
+    private static RuleConfig findRule(CalculatorConfig config, String name) {
+        if (name == null || name.isBlank()) {
+            if (config.getRules().size() == 1) return config.getRules().get(0);
             throw new IllegalArgumentException("请选择分账规则");
         }
-        return config.getRules().stream()
-                .filter(rule -> ruleName.equals(rule.getName()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("找不到规则: " + ruleName));
-    }
-
-    private static void applyStep(StepConfig step, CalculatorConfig config, BillInput input,
-                                  Map<String, BigDecimal> amounts, Map<String, BigDecimal> remainders) {
-        if (step == null || step.getType() == null) {
-            throw new IllegalArgumentException("规则步骤缺少类型");
-        }
-        switch (step.getType()) {
-            case "share" -> applyShare(step, config, input, amounts, remainders);
-            case "transfer" -> applyTransfer(step, amounts);
-            default -> throw new IllegalArgumentException("不认识的规则步骤: " + step.getType());
-        }
+        return config.getRules().stream().filter(rule -> name.equals(rule.getName())).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("找不到规则: " + name));
     }
 
     private static void applyShare(StepConfig step, CalculatorConfig config, BillInput input,
                                    Map<String, BigDecimal> amounts, Map<String, BigDecimal> remainders) {
-        BigDecimal fee = feeOf(step.getSource(), input, remainders);
+        BigDecimal amount = feeOf(step.getSource(), input, remainders);
         List<ShareConfig> shares = step.getShares();
-        if (shares == null || shares.isEmpty()) {
-            throw new IllegalArgumentException("share 步骤没有分配对象");
+        boolean usesDays = shares.stream().anyMatch(share -> CalculatorConfigValidator.usesStayDays(share.getBasis()));
+        int memberCount = config.getMembers().size();
+        BigDecimal commonDenominator = BigDecimal.ONE;
+        if (usesDays) {
+            if (input.getTotalDays() == null || input.getTotalDays() < 1 || input.getTotalDays() > 31) {
+                throw new IllegalArgumentException("使用居住天数分摊时，总天数必须在 1 到 31 之间");
+            }
+            if (input.getOwnerDays() == null || input.getOwnerDays() < 0 || input.getOwnerDays() > input.getTotalDays()) {
+                throw new IllegalArgumentException("居住天数必须在 0 到总天数之间");
+            }
+            commonDenominator = BigDecimal.valueOf((long) input.getTotalDays() * memberCount);
         }
-
-        BigDecimal weightSum = BigDecimal.ZERO;
+        // 先统一分母，保留精确比例，避免 1/3 等循环小数在半分钱边界产生误差。
         List<BigDecimal> weights = new ArrayList<>();
         for (ShareConfig share : shares) {
-            requireMember(config, share.getMember());
-            BigDecimal weight = weightOf(share, input);
-            weights.add(weight);
-            weightSum = weightSum.add(weight);
-        }
-        if (weightSum.compareTo(BigDecimal.ZERO) == 0) {
-            // 例如居住天数为 0：这一步谁也不分，费用全部留给后面的步骤
-            if (Boolean.TRUE.equals(step.getPartial())) {
-                remainders.put(step.getSource(), money(fee));
+            BigDecimal weight = share.getWeight() == null ? BigDecimal.ONE : share.getWeight();
+            if (CalculatorConfigValidator.STAY_DAYS_PER_MEMBER.equals(share.getBasis())) {
+                weight = weight.multiply(BigDecimal.valueOf(input.getOwnerDays()));
+            } else if (CalculatorConfigValidator.STAY_DAYS.equals(share.getBasis())) {
+                weight = weight.multiply(BigDecimal.valueOf((long) input.getOwnerDays() * memberCount));
+            } else {
+                weight = weight.multiply(commonDenominator);
             }
-            return;
+            weights.add(weight);
         }
-
-        // partial：份额是占费用的绝对比例，合计可以小于 1，剩下的留给后面的步骤。
-        // 否则按份额归一，把这项费用全部分完。
-        BigDecimal denominator = Boolean.TRUE.equals(step.getPartial()) ? BigDecimal.ONE : weightSum;
-        if (Boolean.TRUE.equals(step.getPartial()) && weightSum.compareTo(BigDecimal.ONE) > 0) {
-            throw new IllegalArgumentException("只取一部分时，份额合计不能超过 1");
-        }
-
-        BigDecimal distributed = BigDecimal.ZERO;
+        boolean partial = Boolean.TRUE.equals(step.getPartial());
+        BigDecimal sum = sum(weights);
+        if (!partial && sum.signum() == 0) throw new IllegalArgumentException("完整分摊的份额合计必须大于 0");
+        BigDecimal denominator = partial ? commonDenominator : sum;
+        if (partial && sum.compareTo(denominator) > 0) throw new IllegalArgumentException("只取一部分时，份额合计不能超过 1");
+        List<BigDecimal> parts = allocate(amount, weights, denominator, partial);
         for (int i = 0; i < shares.size(); i++) {
-            BigDecimal part = money(fee.multiply(weights.get(i)).divide(denominator, 8, RoundingMode.HALF_UP));
-            distributed = distributed.add(part);
             String member = shares.get(i).getMember();
-            amounts.put(member, amounts.get(member).add(part));
+            amounts.put(member, amounts.get(member).add(parts.get(i)));
         }
-        if (Boolean.TRUE.equals(step.getPartial())) {
-            remainders.put(step.getSource(), money(fee.subtract(distributed)));
+        if (partial) {
+            String origin = step.getSource().replaceFirst("^remainder:", "");
+            remainders.put(origin, amount.subtract(sum(parts)));
         }
     }
 
     private static void applyTransfer(StepConfig step, Map<String, BigDecimal> amounts) {
-        if (!amounts.containsKey(step.getFrom())) {
-            throw new IllegalArgumentException("transfer 的转出人不存在: " + step.getFrom());
-        }
-        List<ShareConfig> receivers = step.getTo();
-        if (receivers == null || receivers.isEmpty()) {
-            throw new IllegalArgumentException("transfer 步骤没有接收人");
-        }
-
         BigDecimal ratio = step.getRatio() == null ? BigDecimal.ONE : step.getRatio();
-        BigDecimal moved = money(amounts.get(step.getFrom()).multiply(ratio));
+        BigDecimal moved = amounts.get(step.getFrom()).multiply(ratio).setScale(2, RoundingMode.HALF_UP);
+        List<BigDecimal> weights = step.getTo().stream()
+                .map(receiver -> receiver.getWeight() == null ? BigDecimal.ONE : receiver.getWeight()).toList();
+        List<BigDecimal> parts = allocate(moved, weights, sum(weights), false);
         amounts.put(step.getFrom(), amounts.get(step.getFrom()).subtract(moved));
-
-        BigDecimal weightSum = BigDecimal.ZERO;
-        for (ShareConfig receiver : receivers) {
-            if (!amounts.containsKey(receiver.getMember())) {
-                throw new IllegalArgumentException("transfer 的接收人不存在: " + receiver.getMember());
-            }
-            weightSum = weightSum.add(receiver.getWeight() == null ? BigDecimal.ONE : receiver.getWeight());
-        }
-        if (weightSum.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("transfer 步骤的接收份额合计为 0");
-        }
-
-        for (ShareConfig receiver : receivers) {
-            BigDecimal weight = receiver.getWeight() == null ? BigDecimal.ONE : receiver.getWeight();
-            BigDecimal part = money(moved.multiply(weight).divide(weightSum, 8, RoundingMode.HALF_UP));
-            amounts.put(receiver.getMember(), amounts.get(receiver.getMember()).add(part));
+        for (int i = 0; i < step.getTo().size(); i++) {
+            String member = step.getTo().get(i).getMember();
+            amounts.put(member, amounts.get(member).add(parts.get(i)));
         }
     }
 
+    /** 先向下取整到分，再按小数余数从大到小补分；余数相同按配置顺序。 */
+    private static List<BigDecimal> allocate(BigDecimal amount, List<BigDecimal> weights,
+                                             BigDecimal denominator, boolean partial) {
+        BigDecimal target = partial ? amount.multiply(sum(weights)).divide(denominator, 2, RoundingMode.HALF_UP) : amount;
+        List<BigDecimal> parts = new ArrayList<>();
+        List<BigDecimal> fractions = new ArrayList<>();
+        for (BigDecimal weight : weights) {
+            BigDecimal[] split = amount.movePointRight(2).multiply(weight).divideAndRemainder(denominator);
+            parts.add(split[0].setScale(0, RoundingMode.UNNECESSARY).movePointLeft(2));
+            fractions.add(split[1]);
+        }
+        int cents = target.subtract(sum(parts)).movePointRight(2).intValueExact();
+        List<Integer> order = IntStream.range(0, weights.size()).boxed()
+                .sorted(Comparator.<Integer, BigDecimal>comparing(fractions::get).reversed()).toList();
+        for (int i = 0; i < cents; i++) {
+            int index = order.get(i);
+            parts.set(index, parts.get(index).add(CENT));
+        }
+        return parts;
+    }
+
+    private static BigDecimal sum(List<BigDecimal> values) {
+        return values.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     private static BigDecimal feeOf(String source, BillInput input, Map<String, BigDecimal> remainders) {
-        if (source == null) {
-            throw new IllegalArgumentException("share 步骤缺少费用来源");
-        }
-        if (source.startsWith("remainder:")) {
-            String origin = source.substring("remainder:".length());
-            BigDecimal remainder = remainders.get(origin);
-            if (remainder == null) {
-                throw new IllegalArgumentException("没有找到上一步剩下的「" + origin + "」，请先加一步只取一部分的分摊");
-            }
-            return remainder;
-        }
+        if (source.startsWith("remainder:")) return remainders.remove(source.substring("remainder:".length()));
         return switch (source) {
-            case "water" -> zero(input.getWaterBill());
-            case "electric" -> zero(input.getElectricBill());
-            case "gas" -> zero(input.getGasBill());
-            case "total" -> zero(input.getWaterBill()).add(zero(input.getElectricBill())).add(zero(input.getGasBill()));
+            case "water" -> input.getWaterBill();
+            case "electric" -> input.getElectricBill();
+            case "gas" -> input.getGasBill();
+            case "total" -> input.getWaterBill().add(input.getElectricBill()).add(input.getGasBill());
             default -> throw new IllegalArgumentException("不认识的费用来源: " + source);
         };
     }
 
-    /**
-     * 份额：固定 weight，或 weight = days/totalDays（某人居住天数占当月总天数）。
-     */
-    private static BigDecimal weightOf(ShareConfig share, BillInput input) {
-        if ("days/totalDays".equals(share.getBasis())) {
-            int totalDays = input.getTotalDays() == null ? 0 : input.getTotalDays();
-            int ownerDays = input.getOwnerDays() == null ? 0 : input.getOwnerDays();
-            if (totalDays <= 0) {
-                throw new IllegalArgumentException("使用居住天数分摊时，总天数必须大于 0");
-            }
-            if (ownerDays < 0 || ownerDays > totalDays) {
-                throw new IllegalArgumentException("居住天数必须在 0 到总天数之间");
-            }
-            BigDecimal ratio = new BigDecimal(ownerDays)
-                    .divide(new BigDecimal(totalDays), 8, RoundingMode.HALF_UP);
-            BigDecimal weight = share.getWeight() == null ? BigDecimal.ONE : share.getWeight();
-            return ratio.multiply(weight);
+    private static BigDecimal fee(BigDecimal value) {
+        if (value == null) return new BigDecimal("0.00");
+        if (value.signum() < 0) throw new IllegalArgumentException("费用不能为负数");
+        try {
+            return value.setScale(2, RoundingMode.UNNECESSARY);
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException("费用最多保留两位小数");
         }
-        if (share.getWeight() == null) {
-            throw new IllegalArgumentException("份额缺少 weight");
-        }
-        return share.getWeight();
-    }
-
-    private static void requireMember(CalculatorConfig config, String key) {
-        boolean exists = config.getMembers().stream().anyMatch(member -> member.getKey().equals(key));
-        if (!exists) {
-            throw new IllegalArgumentException("规则引用了不存在的人员: " + key);
-        }
-    }
-
-    private static BigDecimal zero(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
-
-    private static BigDecimal money(BigDecimal value) {
-        return zero(value).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
     }
 }

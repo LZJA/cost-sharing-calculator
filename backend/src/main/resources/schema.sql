@@ -101,6 +101,10 @@ CREATE TABLE IF NOT EXISTS calculators (
 -- ============================================
 -- 通用账单（每人金额在 shares JSON 里，带当时的名字）
 -- ============================================
+CREATE TABLE IF NOT EXISTS bill_migrations (
+    source VARCHAR(10) PRIMARY KEY COMMENT '已完成的账单或规则迁移'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='账单迁移标记';
+
 CREATE TABLE IF NOT EXISTS bills (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     calculator_id BIGINT NOT NULL COMMENT '所属计算器',

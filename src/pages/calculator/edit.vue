@@ -30,7 +30,8 @@
         <switch :checked="form.config.useStayDays" color="#ff9a9e" @change="onStayDaysChange" />
       </view>
       <text v-if="form.config.useStayDays" class="hint">
-        分摊时可以选「按居住天数」，份额会再乘以 居住天数 / 总天数。
+        房主步骤开启「只取一部分」，选「按居住天数和总人数」、份额填 1，承担总费用 × 居住天数占比 ÷ 总人数。
+        其余人员另加一步分摊剩余费用，份额按约定比例填写。
       </text>
 
       <view class="section-title">分账规则</view>
@@ -83,11 +84,11 @@
               <picker
                 v-if="form.config.useStayDays"
                 mode="selector"
-                :range="['固定', '按居住天数']"
-                :value="share.basis === 'days/totalDays' ? 1 : 0"
-                @change="(e) => (share.basis = e.detail.value === 1 ? 'days/totalDays' : '')"
+                :range="basisOptions.map((item) => item.label)"
+                :value="basisIndex(share.basis)"
+                @change="(e) => (share.basis = basisOptions[Number(e.detail.value)].value)"
               >
-                <view class="picker">{{ share.basis === "days/totalDays" ? "按居住天数" : "固定" }}</view>
+                <view class="picker">{{ basisOptions[basisIndex(share.basis)].label }}</view>
               </picker>
               <text class="remove" @tap="step.shares.splice(shareIndex, 1)">✕</text>
             </view>
@@ -142,7 +143,7 @@
         <input v-model.number="preview.totalDays" type="number" class="input" placeholder="总天数" />
         <input v-model.number="preview.ownerDays" type="number" class="input" placeholder="居住天数" />
       </view>
-      <button class="btn btn-secondary small" @tap="runPreview">试算</button>
+      <button class="btn btn-secondary small" :loading="previewLoading" :disabled="previewLoading" @tap="runPreview">试算</button>
       <text v-if="previewError" class="error">{{ previewError }}</text>
       <view v-for="share in previewResult" :key="share.key" class="result-item">
         <text class="result-label">{{ share.emoji }} {{ share.name }}</text>
@@ -158,11 +159,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 import api from "@/api/costSharingApi.js";
-import { FEE_SOURCES, calculateShares, createMemberKey, emptyCalculatorConfig } from "@/utils/formula.js";
+import { FEE_SOURCES, createMemberKey, emptyCalculatorConfig } from "@/utils/formula.js";
 
 const calculatorId = ref(null);
 const form = ref({
@@ -175,6 +176,12 @@ const form = ref({
 });
 
 const stepTypeLabels = ["分摊", "转移"];
+const basisOptions = [
+  { value: "", label: "固定" },
+  { value: "days/totalDays", label: "按居住天数" },
+  { value: "days/totalDays/memberCount", label: "按居住天数和总人数" },
+];
+const basisIndex = (basis) => Math.max(0, basisOptions.findIndex((item) => item.value === basis));
 const sourceLabels = FEE_SOURCES.map((item) => item.label);
 
 const memberNames = computed(() =>
@@ -216,6 +223,17 @@ const removeMember = (index) => {
 };
 
 const onStayDaysChange = (event) => {
+  const usesStayDays = form.value.config.rules.some((rule) =>
+    rule.steps.some((step) => step.type === "share" && (step.shares || []).some((share) =>
+      ["days/totalDays", "days/totalDays/memberCount"].includes(share.basis)))
+  );
+  if (!event.detail.value && usesStayDays) {
+    // 让 switch 回到当前配置，保留原规则，避免静默改变分摊比例。
+    form.value.config.useStayDays = false;
+    setTimeout(() => { form.value.config.useStayDays = true; }, 0);
+    uni.showToast({ title: "请先把规则中的按居住天数改为固定", icon: "none" });
+    return;
+  }
   form.value.config.useStayDays = event.detail.value;
 };
 
@@ -274,19 +292,40 @@ const preview = ref({ waterBill: "", electricBill: "", gasBill: "", totalDays: 3
 const previewRuleIndex = ref(0);
 const previewResult = ref([]);
 const previewError = ref("");
+let previewVersion = 0;
+watch([() => form.value.config, preview, previewRuleIndex], () => {
+  previewVersion += 1;
+  previewResult.value = [];
+  previewError.value = "";
+}, { deep: true, flush: "sync" });
 
 const onPreviewRuleChange = (event) => {
   previewRuleIndex.value = Number(event.detail.value);
 };
 
-const runPreview = () => {
+const previewLoading = ref(false);
+const runPreview = async () => {
+  if (previewLoading.value) return;
+  previewLoading.value = true;
   previewError.value = "";
   previewResult.value = [];
+  const version = previewVersion;
   try {
     const ruleName = form.value.config.rules[previewRuleIndex.value]?.name;
-    previewResult.value = calculateShares(form.value.config, ruleName, preview.value);
+    const result = await api.bill.preview({
+      config: form.value.config,
+      ruleName,
+      waterBill: Number(preview.value.waterBill) || 0,
+      electricBill: Number(preview.value.electricBill) || 0,
+      gasBill: Number(preview.value.gasBill) || 0,
+      totalDays: form.value.config.useStayDays ? preview.value.totalDays : null,
+      ownerDays: form.value.config.useStayDays ? preview.value.ownerDays : null,
+    });
+    if (version === previewVersion) previewResult.value = result;
   } catch (error) {
-    previewError.value = error.message;
+    if (version === previewVersion) previewError.value = error.message;
+  } finally {
+    previewLoading.value = false;
   }
 };
 

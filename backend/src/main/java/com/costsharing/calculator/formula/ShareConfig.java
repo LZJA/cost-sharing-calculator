@@ -16,7 +16,7 @@ public class ShareConfig {
     /** 固定份额。basis 为 days/totalDays 时，实际份额还要乘以居住天数占比。 */
     private BigDecimal weight;
 
-    /** 为空表示固定份额；days/totalDays 表示按居住天数占比。 */
+    /** 固定份额、居住天数占比，或居住天数占比再除以总人数。 */
     private String basis;
 
     public ShareConfig(String member, BigDecimal weight) {
