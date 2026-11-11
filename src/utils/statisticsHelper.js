@@ -5,7 +5,6 @@
 
 import api from "@/api/costSharingApi.js";
 import dayjs from "dayjs";
-import { CONFIG } from "@/utils/config.js";
 
 /**
  * 获取统计数据
@@ -13,12 +12,10 @@ import { CONFIG } from "@/utils/config.js";
  * @param {Object} filter - { startYear, startMonth, endYear, endMonth }
  * @returns {Promise<Array>} 账单数据数组
  */
-export async function fetchStatisticsData(type, filter) {
+export async function fetchStatisticsData(calculatorId, filter) {
   try {
-    const apiMethod = type === "lizi" ? api.liziBill : api.geziBill;
-
-    // 获取所有数据（设置较大的size）
-    const result = await apiMethod.getPage({
+    const result = await api.bill.getPage({
+      calculatorId,
       ...filter,
       page: 0,
       size: 1000, // 足够大的数字以获取所有数据
@@ -34,10 +31,9 @@ export async function fetchStatisticsData(type, filter) {
 /**
  * 处理账单数据为统计格式
  * @param {Array} bills - 账单数据数组
- * @param {String} type - 'lizi' | 'gezi'
  * @returns {Object} 处理后的统计数据
  */
-export function processBillData(bills, type) {
+export function processBillData(bills) {
   if (!bills || bills.length === 0) {
     return {
       timeline: [],
@@ -64,22 +60,18 @@ export function processBillData(bills, type) {
   const gasBills = sortedBills.map((b) => b.gasBill || 0);
   const totalAmounts = sortedBills.map((b) => b.totalAmount || 0);
 
-  // 4. 根据类型提取分摊数据
-  let splitData = {};
-  if (type === "lizi") {
-    splitData = {
-      owner: sortedBills.map((b) => b.ownerAmount || 0),
-      sister: sortedBills.map((b) => b.sisterAmount || 0),
-      datou: sortedBills.map((b) => b.datouAmount || 0),
-    };
-  } else {
-    splitData = {
-      lizi: sortedBills.map((b) => b.liziAmount || 0),
-      gezi: sortedBills.map((b) => b.geziAmount || 0),
-      chunfeng: sortedBills.map((b) => b.chunfengAmount || 0),
-      chengzi: sortedBills.map((b) => b.chengziAmount || 0),
-    };
-  }
+  // 4. 按账单里记录的人员汇总分摊数据，名字用当时存下来的
+  const splitData = {};
+  sortedBills.forEach((bill) => {
+    (bill.shares || []).forEach((share) => {
+      if (!splitData[share.key]) splitData[share.key] = [];
+    });
+  });
+  Object.keys(splitData).forEach((key) => {
+    splitData[key] = sortedBills.map(
+      (bill) => (bill.shares || []).find((share) => share.key === key)?.amount || 0
+    );
+  });
 
   return {
     timeline,
@@ -171,67 +163,31 @@ export function calculateComparison(currentData, previousData, lastYearData) {
 /**
  * 统计累计分摊费用和占比
  * @param {Array} bills - 账单数据数组
- * @param {String} type - 'lizi' | 'gezi'
- * @returns {Array} 分摊统计数组
+ * @returns {Array} 分摊统计数组，名字取账单里当时记录的名字
  */
-export function calculateSplitStatistics(bills, type) {
+export function calculateSplitStatistics(bills) {
   if (!bills || bills.length === 0) {
     return [];
   }
 
-  if (type === "lizi") {
-    const ownerTotal = bills.reduce((sum, b) => sum + (b.ownerAmount || 0), 0);
-    const sisterTotal = bills.reduce((sum, b) => sum + (b.sisterAmount || 0), 0);
-    const datouTotal = bills.reduce((sum, b) => sum + (b.datouAmount || 0), 0);
-    const grandTotal = ownerTotal + sisterTotal + datouTotal;
+  const totals = new Map();
+  bills.forEach((bill) => {
+    (bill.shares || []).forEach((share) => {
+      const current = totals.get(share.key) || {
+        name: `${share.emoji || ""} ${share.name}`.trim(),
+        amount: 0,
+      };
+      current.amount += share.amount || 0;
+      totals.set(share.key, current);
+    });
+  });
 
-    return [
-      {
-        name: CONFIG.LABELS.lizi.owner,
-        amount: ownerTotal,
-        percentage: grandTotal > 0 ? (ownerTotal / grandTotal * 100).toFixed(1) : 0,
-      },
-      {
-        name: CONFIG.LABELS.lizi.sister,
-        amount: sisterTotal,
-        percentage: grandTotal > 0 ? (sisterTotal / grandTotal * 100).toFixed(1) : 0,
-      },
-      {
-        name: CONFIG.LABELS.lizi.datou,
-        amount: datouTotal,
-        percentage: grandTotal > 0 ? (datouTotal / grandTotal * 100).toFixed(1) : 0,
-      },
-    ];
-  } else {
-    const liziTotal = bills.reduce((sum, b) => sum + (b.liziAmount || 0), 0);
-    const geziTotal = bills.reduce((sum, b) => sum + (b.geziAmount || 0), 0);
-    const chunfengTotal = bills.reduce((sum, b) => sum + (b.chunfengAmount || 0), 0);
-    const chengziTotal = bills.reduce((sum, b) => sum + (b.chengziAmount || 0), 0);
-    const grandTotal = liziTotal + geziTotal + chunfengTotal + chengziTotal;
-
-    return [
-      {
-        name: CONFIG.LABELS.gezi.lizi,
-        amount: liziTotal,
-        percentage: grandTotal > 0 ? (liziTotal / grandTotal * 100).toFixed(1) : 0,
-      },
-      {
-        name: CONFIG.LABELS.gezi.gezi,
-        amount: geziTotal,
-        percentage: grandTotal > 0 ? (geziTotal / grandTotal * 100).toFixed(1) : 0,
-      },
-      {
-        name: CONFIG.LABELS.gezi.chunfeng,
-        amount: chunfengTotal,
-        percentage: grandTotal > 0 ? (chunfengTotal / grandTotal * 100).toFixed(1) : 0,
-      },
-      {
-        name: CONFIG.LABELS.gezi.chengzi,
-        amount: chengziTotal,
-        percentage: grandTotal > 0 ? (chengziTotal / grandTotal * 100).toFixed(1) : 0,
-      },
-    ];
-  }
+  const grandTotal = [...totals.values()].reduce((sum, item) => sum + item.amount, 0);
+  return [...totals.values()].map((item) => ({
+    name: item.name,
+    amount: item.amount,
+    percentage: grandTotal > 0 ? ((item.amount / grandTotal) * 100).toFixed(1) : 0,
+  }));
 }
 
 /**

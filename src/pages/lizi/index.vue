@@ -519,9 +519,16 @@ onMounted(async () => {
   });*/
 });
 
-onLoad((options) => {
-  if (options && options.name) {
-    pageTitle.value = options.name;
+onLoad(async () => {
+  // 旧分享链接：跳到迁移后的李子计算器，找不到就回首页
+  try {
+    const calculators = (await api.calculator.getAll()) || [];
+    const target = calculators.find((item) => item.legacyKey === "lizi");
+    uni.redirectTo({
+      url: target ? `/pages/calculator/index?id=${target.id}` : "/pages/home/home",
+    });
+  } catch (error) {
+    uni.redirectTo({ url: "/pages/home/home" });
   }
 });
 

@@ -18,7 +18,6 @@
 
 <script setup>
 import { ref, getCurrentInstance } from "vue";
-import { CONFIG } from "@/utils/config.js";
 
 const props = defineProps({
   data: {
@@ -53,7 +52,7 @@ const drawPoster = () => {
   const w = canvasWidth.value;
   const h = canvasHeight.value;
   const {
-    billType,
+    title,
     dateRange,
     metrics,
     comparison,
@@ -83,9 +82,7 @@ const drawPoster = () => {
   ctx.setFontSize(22);
   ctx.setFillStyle("#5a7c9a");
   ctx.setTextAlign("center");
-  const group = CONFIG.PEOPLE[billType] || CONFIG.PEOPLE.lizi;
-  const typeText = `${group.emoji} ${group.shortTitle}`;
-  ctx.fillText(`${typeText} 统计报告`, w / 2, 40);
+  ctx.fillText(`${title || "统计报告"}`, w / 2, 40);
 
   // Date range
   ctx.setFontSize(12);

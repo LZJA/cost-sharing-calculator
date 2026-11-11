@@ -183,8 +183,6 @@
 import { ref, computed, onMounted } from "vue";
 import api from "@/api/costSharingApi.js";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
-import { CONFIG } from "@/utils/config.js";
-
 // 滑动操作选项
 const swipeOptions = ref([
   {
@@ -199,7 +197,7 @@ const swipeOptions = ref([
 ]);
 
 // 页面参数
-const billType = ref("lizi"); // lizi 或 gezi
+const calculatorId = ref("");
 const pageTitle = ref("账单列表");
 
 // 账单列表数据
@@ -401,7 +399,7 @@ const resetFilter = () => {
 // 导航到统计分析页面
 const navigateToStatistics = () => {
   uni.navigateTo({
-    url: `/subpackages/statistics/index?type=${billType.value}`,
+    url: `/subpackages/statistics/index?calculatorId=${calculatorId.value}`,
     fail: (err) => {
       console.error("导航失败", err);
       uni.showToast({
@@ -418,10 +416,8 @@ const loadBills = async () => {
 
   loading.value = true;
   try {
-    const apiMethod = billType.value === "lizi" ? api.liziBill : api.geziBill;
-
-    // 使用 getPage 接口，支持区间筛选参数
-    const result = await apiMethod.getPage({
+    const result = await api.bill.getPage({
+      calculatorId: calculatorId.value,
       ...filterParams.value,
       page: currentPage.value,
       size: pageSize.value,
@@ -463,9 +459,7 @@ const handleSwipeClick = (e, bill) => {
       success: async (res) => {
         if (res.confirm) {
           try {
-            const apiMethod =
-              billType.value === "lizi" ? api.liziBill : api.geziBill;
-            await apiMethod.delete(bill.id);
+            await api.bill.delete(bill.id);
 
             uni.showToast({
               title: "删除成功",
@@ -507,9 +501,8 @@ onMounted(() => {
   const currentPage = pages[pages.length - 1];
   const options = currentPage.options || {};
 
-  billType.value = options.type || "lizi";
-  const group = CONFIG.PEOPLE[billType.value] || CONFIG.PEOPLE.lizi;
-  pageTitle.value = `${group.shortTitle}列表`;
+  calculatorId.value = options.calculatorId || "";
+  pageTitle.value = options.name ? `${options.name}账单` : "账单列表";
 
   // 初始化年份选项
   initYearOptions();

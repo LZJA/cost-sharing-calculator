@@ -6,18 +6,13 @@
     <!-- 账单类型切换 -->
     <view class="type-tabs">
       <view
+        v-for="calculator in calculators"
+        :key="calculator.id"
         class="tab"
-        :class="{ active: billType === 'lizi' }"
-        @tap="switchBillType('lizi')"
+        :class="{ active: calculatorId === calculator.id }"
+        @tap="switchCalculator(calculator.id)"
       >
-        {{ liziTabLabel }}
-      </view>
-      <view
-        class="tab"
-        :class="{ active: billType === 'gezi' }"
-        @tap="switchBillType('gezi')"
-      >
-        {{ geziTabLabel }}
+        {{ calculator.avatar || "📒" }} {{ calculator.name }}
       </view>
     </view>
 
@@ -316,19 +311,14 @@ import {
   generateComboChartData,
 } from "@/utils/statisticsHelper.js";
 import { formatAmount } from "@/utils/helpers.js";
-import { CONFIG } from "@/utils/config.js";
+import api from "@/api/costSharingApi.js";
 import dayjs from "dayjs";
 
 // 获取 URL 参数
 const instance = getCurrentInstance();
-const pageParams = ref({
-  type: "lizi",
-});
-
-// 账单类型
-const billType = ref("lizi");
-const liziTabLabel = `${CONFIG.PEOPLE.lizi.emoji} ${CONFIG.PEOPLE.lizi.shortTitle}`;
-const geziTabLabel = `${CONFIG.PEOPLE.gezi.emoji} ${CONFIG.PEOPLE.gezi.shortTitle}`;
+// 当前统计的计算器
+const calculators = ref([]);
+const calculatorId = ref(null);
 
 // 加载状态
 const loading = ref(false);
@@ -436,7 +426,8 @@ const loadData = async () => {
   hasData.value = false;
 
   try {
-    const bills = await fetchStatisticsData(billType.value, filterParams.value);
+    if (!calculatorId.value) return;
+    const bills = await fetchStatisticsData(calculatorId.value, filterParams.value);
 
     if (bills.length === 0) {
       loading.value = false;
@@ -446,7 +437,7 @@ const loadData = async () => {
     hasData.value = true;
 
     // 处理数据
-    const processed = processBillData(bills, billType.value);
+    const processed = processBillData(bills);
 
     // 计算核心指标
     metrics.value = calculateCoreMetrics(processed.sortedBills);
@@ -467,10 +458,7 @@ const loadData = async () => {
     );
 
     // 计算分摊统计
-    splitStatistics.value = calculateSplitStatistics(
-      processed.sortedBills,
-      billType.value,
-    );
+    splitStatistics.value = calculateSplitStatistics(processed.sortedBills);
 
     // 计算费用分布
     costDistribution.value = calculateCostDistribution(processed.sortedBills);
@@ -486,7 +474,7 @@ const loadData = async () => {
 
     // 准备报告数据
     reportData.value = {
-      billType: billType.value,
+      title: calculators.value.find((item) => item.id === calculatorId.value)?.name || "统计报告",
       dateRange: dateRangeText.value,
       metrics: metrics.value,
       comparison: comparison.value,
@@ -505,10 +493,9 @@ const loadData = async () => {
   }
 };
 
-// 切换账单类型
-const switchBillType = (type) => {
-  if (billType.value === type) return;
-  billType.value = type;
+const switchCalculator = (id) => {
+  if (calculatorId.value === id) return;
+  calculatorId.value = id;
   loadData();
 };
 
@@ -598,15 +585,18 @@ const showShareMenu = () => {
 };
 
 // 页面加载
-onMounted(() => {
+onMounted(async () => {
   // 获取页面参数
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
   const options = currentPage.options || {};
 
-  if (options.type && (options.type === "lizi" || options.type === "gezi")) {
-    billType.value = options.type;
-  }
+  calculators.value = (await api.calculator.getAll()) || [];
+  const requested = options.calculatorId ? Number(options.calculatorId) : null;
+  calculatorId.value =
+    calculators.value.find((item) => item.id === requested)?.id ||
+    calculators.value[0]?.id ||
+    null;
 
   initYearOptions();
   // 设置默认为最近12个月

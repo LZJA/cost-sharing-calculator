@@ -96,7 +96,11 @@ public final class FormulaEngine {
             weightSum = weightSum.add(weight);
         }
         if (weightSum.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("share 步骤的份额合计为 0");
+            // 例如居住天数为 0：这一步谁也不分，费用全部留给后面的步骤
+            if (Boolean.TRUE.equals(step.getPartial())) {
+                remainders.put(step.getSource(), money(fee));
+            }
+            return;
         }
 
         // partial：份额是占费用的绝对比例，合计可以小于 1，剩下的留给后面的步骤。

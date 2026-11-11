@@ -80,91 +80,12 @@
       <text class="tip-text">💡 选择计算器开始分账</text>
     </view>
 
-    <!-- 编辑卡片弹窗 -->
-    <view v-if="showEditModal" class="modal-overlay" @tap="closeEditModal">
-      <view class="modal-content" @tap.stop>
-        <view class="modal-header">
-          <text class="modal-title">编辑卡片信息</text>
-          <view class="modal-close" @tap="closeEditModal">
-            <text>✕</text>
-          </view>
-        </view>
-        <view class="modal-body">
-          <view class="form-group">
-            <text class="form-label">卡片名称</text>
-            <input
-              v-model="editingCard.name"
-              placeholder="请输入卡片名称"
-              class="form-input"
-            />
-          </view>
-          <view class="form-group">
-            <text class="form-label">描述语</text>
-            <input
-              v-model="editingCard.description"
-              placeholder="请输入描述语"
-              class="form-input"
-            />
-          </view>
-          <view class="form-group">
-            <text class="form-label">头像 (emoji)</text>
-            <input
-              v-model="editingCard.avatar"
-              placeholder="请输入emoji"
-              class="form-input"
-            />
-          </view>
-          <view class="form-group">
-            <text class="form-label">启用背景图</text>
-            <view class="switch-container">
-              <view class="custom-switch" @tap="toggleBackground">
-                <view
-                  class="switch-track"
-                  :class="{ active: editingCard.enableBackground }"
-                >
-                  <view
-                    class="switch-thumb"
-                    :class="{ active: editingCard.enableBackground }"
-                  ></view>
-                </view>
-              </view>
-              <text
-                class="switch-label"
-                :class="{ active: editingCard.enableBackground }"
-              >
-                {{ editingCard.enableBackground ? "已启用" : "已禁用" }}
-              </text>
-            </view>
-            <view
-              v-if="editingCard.enableBackground && !editingCard.background"
-              class="background-tip"
-            >
-              <text class="tip-text">💡 启用后需要设置背景图片</text>
-            </view>
-            <view
-              v-if="editingCard.enableBackground && editingCard.background"
-              class="background-preview"
-            >
-              <image
-                :src="editingCard.background"
-                mode="aspectFill"
-                class="preview-image"
-              />
-              <text class="preview-text">当前背景图片</text>
-            </view>
-          </view>
-        </view>
-        <view class="modal-footer">
-          <button class="btn btn-secondary" @tap="closeEditModal">取消</button>
-          <button class="btn btn-primary" @tap="saveCardEdit">保存</button>
-        </view>
-      </view>
-    </view>
   </view>
 </template>
 
 <script setup>
 import { ref, onMounted, getCurrentInstance } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import api from "@/api/costSharingApi.js";
 import {
   uploadImageWithCompress,
@@ -175,11 +96,6 @@ const statusBarHeight = ref(0);
 
 // 计算器列表，从后端读取
 const calculators = ref([]);
-
-// 弹窗相关状态
-const showEditModal = ref(false);
-const editingCard = ref({});
-const editingCardType = ref("");
 
 const openCalculator = (calculator) => {
   uni.navigateTo({
@@ -213,53 +129,6 @@ const navigateToStatistics = () => {
   });
 };
 
-// 关闭编辑弹窗
-const closeEditModal = () => {
-  showEditModal.value = false;
-  editingCard.value = {};
-  editingCardType.value = "";
-};
-
-// 背景图开关切换
-const toggleBackground = () => {
-  editingCard.value.enableBackground = !editingCard.value.enableBackground;
-};
-
-// 保存卡片编辑
-const saveCardEdit = async () => {
-  if (!editingCard.value.name || !editingCard.value.description) {
-    uni.showToast({
-      title: "请填写完整信息",
-      icon: "none",
-    });
-    return;
-  }
-
-  try {
-    // 准备保存的数据，添加 type 字段
-    const cardData = {
-      ...editingCard.value,
-      type: editingCardType.value,
-    };
-
-    await api.calculator.update(editingCardType.value, cardData);
-    const target = calculators.value.find((item) => item.id === editingCardType.value);
-    if (target) Object.assign(target, editingCard.value);
-
-    uni.showToast({
-      title: "保存成功",
-      icon: "success",
-    });
-
-    closeEditModal();
-  } catch (error) {
-    console.error("保存卡片失败", error);
-    uni.showToast({
-      title: "保存失败，请重试",
-      icon: "none",
-    });
-  }
-};
 // 图片裁剪
 const cropImage = (imagePath, cardType) => {
   // 微信小程序图片裁剪实现
@@ -385,7 +254,11 @@ onMounted(() => {
     },
   });
 
-  // 加载卡片数据
+  loadCardData();
+});
+
+// 从配置页返回时刷新列表
+onShow(() => {
   loadCardData();
 });
 
@@ -560,6 +433,12 @@ defineExpose({
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.add-card {
+  border: 2rpx dashed rgba(90, 124, 154, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
 }
 
 .card-header {

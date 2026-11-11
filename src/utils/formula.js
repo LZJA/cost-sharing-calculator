@@ -55,7 +55,11 @@ const applyShare = (step, input, amounts, remainders) => {
 
   const weights = shares.map((share) => weightOf(share, input));
   const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
-  if (weightSum === 0) throw new Error("份额合计为 0");
+  if (weightSum === 0) {
+    // 例如居住天数为 0：这一步谁也不分，费用全部留给后面的步骤
+    if (step.partial) remainders[step.source] = money(fee);
+    return;
+  }
   if (step.partial && weightSum > 1 + 1e-9) {
     throw new Error("只取一部分时，份额合计不能超过 1");
   }
