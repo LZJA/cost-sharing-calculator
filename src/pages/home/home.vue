@@ -264,7 +264,7 @@ onShow(() => {
 const onShareAppMessage = () => {
   return {
     title: "分账计算器",
-    desc: "轻松计算水电燃气费用分摊，让合租生活更简单！",
+    desc: "自定义费用、人员和分摊规则，轻松记录每一笔共同开支！",
     path: "/pages/home/home",
     imageUrl: "", // 可以设置自定义分享图片
     success: function (res) {
@@ -279,7 +279,7 @@ const onShareAppMessage = () => {
 // 分享到朋友圈
 const onShareTimeline = () => {
   return {
-    title: "分账计算器 - 让合租生活更简单",
+    title: "分账计算器 - 轻松分摊共同开支",
     query: "",
     imageUrl: "", // 可以设置自定义分享图片
     success: function (res) {

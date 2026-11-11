@@ -5,10 +5,11 @@
 
 import api from "@/api/costSharingApi.js";
 import dayjs from "dayjs";
+import { getBillFees } from "@/utils/formula.js";
 
 /**
  * 获取统计数据
- * @param {String} type - 'lizi' | 'gezi'
+ * @param {Number} calculatorId - 计算器 ID
  * @param {Object} filter - { startYear, startMonth, endYear, endMonth }
  * @returns {Promise<Array>} 账单数据数组
  */
@@ -37,9 +38,8 @@ export function processBillData(bills) {
   if (!bills || bills.length === 0) {
     return {
       timeline: [],
-      waterBills: [],
-      electricBills: [],
-      gasBills: [],
+      feeSeries: [],
+      sortedBills: [],
       totalAmounts: [],
       splitData: {},
     };
@@ -55,9 +55,15 @@ export function processBillData(bills) {
   const timeline = sortedBills.map((b) => `${b.year}.${b.month}`);
 
   // 3. 提取各类费用序列
-  const waterBills = sortedBills.map((b) => b.waterBill || 0);
-  const electricBills = sortedBills.map((b) => b.electricBill || 0);
-  const gasBills = sortedBills.map((b) => b.gasBill || 0);
+  const feeRows = sortedBills.map(getBillFees);
+  const definitions = new Map();
+  feeRows.forEach((fees) => fees.forEach((fee) => definitions.set(fee.key, fee)));
+  const feeSeries = [...definitions.values()].map((fee, index) => ({
+    key: fee.key,
+    name: fee.name,
+    color: FEE_COLORS[index % FEE_COLORS.length],
+    data: feeRows.map((fees) => Number(fees.find((item) => item.key === fee.key)?.amount) || 0),
+  }));
   const totalAmounts = sortedBills.map((b) => b.totalAmount || 0);
 
   // 4. 按账单里记录的人员汇总分摊数据，名字用当时存下来的
@@ -75,9 +81,7 @@ export function processBillData(bills) {
 
   return {
     timeline,
-    waterBills,
-    electricBills,
-    gasBills,
+    feeSeries,
     totalAmounts,
     splitData,
     sortedBills, // 返回排序后的账单数据，用于其他计算
@@ -195,36 +199,24 @@ export function calculateSplitStatistics(bills) {
  * @param {Array} bills - 账单数据数组
  * @returns {Array} 费用类型占比数组
  */
+const FEE_COLORS = ["#a8edea", "#ffd93d", "#6bcf7f", "#c3a6ff", "#ffb785", "#8ab8f5"];
+
 export function calculateCostDistribution(bills) {
   if (!bills || bills.length === 0) {
     return [];
   }
 
-  const waterTotal = bills.reduce((sum, b) => sum + (b.waterBill || 0), 0);
-  const electricTotal = bills.reduce((sum, b) => sum + (b.electricBill || 0), 0);
-  const gasTotal = bills.reduce((sum, b) => sum + (b.gasBill || 0), 0);
-  const grandTotal = waterTotal + electricTotal + gasTotal;
-
-  return [
-    {
-      name: "💧 水费",
-      value: waterTotal,
-      percentage: grandTotal > 0 ? (waterTotal / grandTotal * 100).toFixed(1) : 0,
-      color: "#a8edea",
-    },
-    {
-      name: "⚡ 电费",
-      value: electricTotal,
-      percentage: grandTotal > 0 ? (electricTotal / grandTotal * 100).toFixed(1) : 0,
-      color: "#ffd93d",
-    },
-    {
-      name: "🔥 燃气费",
-      value: gasTotal,
-      percentage: grandTotal > 0 ? (gasTotal / grandTotal * 100).toFixed(1) : 0,
-      color: "#ff6b9d",
-    },
-  ];
+  const totals = new Map();
+  bills.forEach((bill) => getBillFees(bill).forEach((fee) => {
+    const amount = (totals.get(fee.key)?.value || 0) + (Number(fee.amount) || 0);
+    totals.set(fee.key, { key: fee.key, name: `${fee.emoji || "💰"} ${fee.name}`, value: amount });
+  }));
+  const grandTotal = [...totals.values()].reduce((sum, fee) => sum + fee.value, 0);
+  return [...totals.values()].map((fee, index) => ({
+    ...fee,
+    percentage: grandTotal > 0 ? ((fee.value / grandTotal) * 100).toFixed(1) : 0,
+    color: FEE_COLORS[index % FEE_COLORS.length],
+  }));
 }
 
 /**
@@ -284,56 +276,16 @@ export function findBillByMonth(bills, year, month) {
 export function generateLineChartData(processedData) {
   return {
     categories: processedData.timeline,
-    series: [
-      {
-        name: "总费用",
-        data: processedData.totalAmounts,
-        color: "#ff6b9d",
-      },
-      {
-        name: "水费",
-        data: processedData.waterBills,
-        color: "#a8edea",
-      },
-      {
-        name: "电费",
-        data: processedData.electricBills,
-        color: "#ffd93d",
-      },
-      {
-        name: "燃气费",
-        data: processedData.gasBills,
-        color: "#6bcf7f",
-      },
-    ],
+    series: [{ name: "总费用", data: processedData.totalAmounts, color: "#ff6b9d" },
+      ...processedData.feeSeries.map((fee) => ({ name: fee.name, data: fee.data, color: fee.color }))],
   };
 }
 
-/**
- * 生成柱状图数据
- * @param {Object} processedData - 处理后的数据
- * @returns {Object} 柱状图数据
- */
+/** 按账单实际记录的费用项生成柱状图。 */
 export function generateBarChartData(processedData) {
   return {
     categories: processedData.timeline,
-    series: [
-      {
-        name: "水费",
-        data: processedData.waterBills,
-        color: "#a8edea",
-      },
-      {
-        name: "电费",
-        data: processedData.electricBills,
-        color: "#ffd93d",
-      },
-      {
-        name: "燃气费",
-        data: processedData.gasBills,
-        color: "#6bcf7f",
-      },
-    ],
+    series: processedData.feeSeries.map((fee) => ({ name: fee.name, data: fee.data, color: fee.color })),
   };
 }
 

@@ -48,26 +48,10 @@
               >
             </view>
             <view class="bill-details">
-              <view class="detail-item">
-                <text class="detail-icon">💧</text>
-                <text class="detail-label">水费</text>
-                <text class="detail-value"
-                  >¥{{ formatMoney(bill.waterBill) }}</text
-                >
-              </view>
-              <view class="detail-item">
-                <text class="detail-icon">⚡</text>
-                <text class="detail-label">电费</text>
-                <text class="detail-value"
-                  >¥{{ formatMoney(bill.electricBill) }}</text
-                >
-              </view>
-              <view class="detail-item">
-                <text class="detail-icon">🔥</text>
-                <text class="detail-label">燃气费</text>
-                <text class="detail-value"
-                  >¥{{ formatMoney(bill.gasBill) }}</text
-                >
+              <view v-for="fee in getBillFees(bill)" :key="fee.key" class="detail-item">
+                <text class="detail-icon">{{ fee.emoji || '💰' }}</text>
+                <text class="detail-label">{{ fee.name }}</text>
+                <text class="detail-value">¥{{ formatMoney(fee.amount) }}</text>
               </view>
             </view>
           </view>
@@ -182,6 +166,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import api from "@/api/costSharingApi.js";
+import { getBillFees } from "@/utils/formula.js";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 // 滑动操作选项
 const swipeOptions = ref([
@@ -652,11 +637,14 @@ onMounted(() => {
 
 .detail-label {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
   font-size: 28rpx;
   color: #6b8aa6;
 }
 
 .detail-value {
+  flex-shrink: 0;
   font-size: 28rpx;
   font-weight: 600;
   color: #5a7c9a;

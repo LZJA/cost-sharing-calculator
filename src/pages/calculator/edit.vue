@@ -5,7 +5,7 @@
     <view class="form-container">
       <view class="form-group">
         <text class="label">名称</text>
-        <input v-model="form.name" class="input" placeholder="例如：李子的分账计算器" />
+        <input v-model="form.name" class="input" placeholder="例如：共同开支、周末出游" />
       </view>
       <view class="form-group">
         <text class="label">描述</text>
@@ -25,14 +25,30 @@
       </view>
       <button class="btn btn-secondary small" @tap="addMember">＋ 添加人员</button>
 
+      <view class="section-title">费用项</view>
+      <text class="hint">定义要分摊的费用，例如房租、网费、聚餐。金额在记账时填写，改名不影响旧账。</text>
+      <view v-for="(fee, index) in form.config.fees" :key="fee.key" class="member-row">
+        <input v-model="fee.emoji" class="input emoji-input" placeholder="💰" />
+        <input v-model="fee.name" class="input" placeholder="费用名称" />
+        <text class="remove" @tap="removeFee(index)">删除</text>
+      </view>
+      <button class="btn btn-secondary small" @tap="addFee">＋ 添加费用项</button>
+
       <view class="form-group switch-row">
-        <text class="label">需要填写居住天数</text>
+        <text class="label">启用天数比例</text>
         <switch :checked="form.config.useStayDays" color="#ff9a9e" @change="onStayDaysChange" />
       </view>
-      <text v-if="form.config.useStayDays" class="hint">
-        房主步骤开启「只取一部分」，选「按居住天数和总人数」、份额填 1，承担总费用 × 居住天数占比 ÷ 总人数。
-        其余人员另加一步分摊剩余费用，份额按约定比例填写。
-      </text>
+      <view v-if="form.config.useStayDays">
+        <text class="hint">份额可乘以参与天数占比；「按天数占比均摊」还会除以总人数。开启「只取一部分」时按该比例取费用，剩余费用另加步骤分摊；关闭时按最终份额分完整项费用。</text>
+        <view class="form-group">
+          <text class="label">总天数字段名称</text>
+          <input v-model="form.config.dayLabels.total" class="input" placeholder="例如：周期总天数" />
+        </view>
+        <view class="form-group">
+          <text class="label">参与天数字段名称</text>
+          <input v-model="form.config.dayLabels.counted" class="input" placeholder="例如：使用天数、入住天数" />
+        </view>
+      </view>
 
       <view class="section-title">分账规则</view>
       <text class="hint">
@@ -63,7 +79,7 @@
               mode="selector"
               :range="sourceLabels"
               :value="sourceIndex(step.source)"
-              @change="(e) => (step.source = FEE_SOURCES[e.detail.value].value)"
+              @change="(e) => (step.source = feeSources[Number(e.detail.value)].value)"
             >
               <view class="picker">费用：{{ sourceLabel(step.source) }}</view>
             </picker>
@@ -73,6 +89,7 @@
             </view>
             <view v-for="(share, shareIndex) in step.shares" :key="shareIndex" class="share-row">
               <picker
+                class="member-picker"
                 mode="selector"
                 :range="memberNames"
                 :value="memberIndex(share.member)"
@@ -83,6 +100,7 @@
               <input v-model.number="share.weight" type="digit" class="input weight-input" placeholder="份额" />
               <picker
                 v-if="form.config.useStayDays"
+                class="basis-picker"
                 mode="selector"
                 :range="basisOptions.map((item) => item.label)"
                 :value="basisIndex(share.basis)"
@@ -110,6 +128,7 @@
             </view>
             <view v-for="(receiver, receiverIndex) in step.to" :key="receiverIndex" class="share-row">
               <picker
+                class="member-picker"
                 mode="selector"
                 :range="memberNames"
                 :value="memberIndex(receiver.member)"
@@ -134,14 +153,19 @@
           <view class="picker">规则：{{ ruleNames[previewRuleIndex] || "请选择" }}</view>
         </picker>
       </view>
-      <view class="share-row">
-        <input v-model.number="preview.waterBill" type="digit" class="input" placeholder="水费" />
-        <input v-model.number="preview.electricBill" type="digit" class="input" placeholder="电费" />
-        <input v-model.number="preview.gasBill" type="digit" class="input" placeholder="燃气费" />
+      <view v-for="fee in form.config.fees" :key="fee.key" class="form-group">
+        <text class="label">{{ fee.emoji || '💰' }} {{ fee.name || '未命名费用' }}（元）</text>
+        <input v-model="preview.fees[fee.key]" type="digit" class="input" placeholder="0.00" />
       </view>
-      <view v-if="form.config.useStayDays" class="share-row">
-        <input v-model.number="preview.totalDays" type="number" class="input" placeholder="总天数" />
-        <input v-model.number="preview.ownerDays" type="number" class="input" placeholder="居住天数" />
+      <view v-if="form.config.useStayDays">
+        <view class="form-group">
+          <text class="label">{{ dayLabels.total }}</text>
+          <input v-model.number="preview.totalDays" type="number" class="input" placeholder="例如：30" />
+        </view>
+        <view class="form-group">
+          <text class="label">{{ dayLabels.counted }}</text>
+          <input v-model.number="preview.ownerDays" type="number" class="input" placeholder="例如：15" />
+        </view>
       </view>
       <button class="btn btn-secondary small" :loading="previewLoading" :disabled="previewLoading" @tap="runPreview">试算</button>
       <text v-if="previewError" class="error">{{ previewError }}</text>
@@ -163,7 +187,7 @@ import { computed, ref, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 import api from "@/api/costSharingApi.js";
-import { FEE_SOURCES, createMemberKey, emptyCalculatorConfig } from "@/utils/formula.js";
+import { createMemberKey, createFeeKey, emptyCalculatorConfig, getFeeDefinitions, getFeeSources, getFeeAmounts, getDayLabels } from "@/utils/formula.js";
 
 const calculatorId = ref(null);
 const form = ref({
@@ -178,11 +202,13 @@ const form = ref({
 const stepTypeLabels = ["分摊", "转移"];
 const basisOptions = [
   { value: "", label: "固定" },
-  { value: "days/totalDays", label: "按居住天数" },
-  { value: "days/totalDays/memberCount", label: "按居住天数和总人数" },
+  { value: "days/totalDays", label: "按天数占比" },
+  { value: "days/totalDays/memberCount", label: "按天数占比均摊" },
 ];
 const basisIndex = (basis) => Math.max(0, basisOptions.findIndex((item) => item.value === basis));
-const sourceLabels = FEE_SOURCES.map((item) => item.label);
+const feeSources = computed(() => getFeeSources(form.value.config));
+const sourceLabels = computed(() => feeSources.value.map((item) => item.label));
+const dayLabels = computed(() => getDayLabels(form.value.config));
 
 const memberNames = computed(() =>
   form.value.config.members.map((member) => member.name || "未命名")
@@ -198,10 +224,26 @@ const memberIndex = (key) => {
   return index < 0 ? 0 : index;
 };
 const sourceIndex = (source) => {
-  const index = FEE_SOURCES.findIndex((item) => item.value === source);
+  const index = feeSources.value.findIndex((item) => item.value === source);
   return index < 0 ? 0 : index;
 };
-const sourceLabel = (source) => FEE_SOURCES.find((item) => item.value === source)?.label || "选择费用";
+const sourceLabel = (source) => feeSources.value.find((item) => item.value === source)?.label || "费用已删除，请重新选择";
+
+const addFee = () => form.value.config.fees.push({ key: createFeeKey(), name: "", emoji: "💰" });
+const removeFee = (index) => {
+  if (form.value.config.fees.length <= 1) {
+    uni.showToast({ title: "至少保留一项费用", icon: "none" });
+    return;
+  }
+  const fee = form.value.config.fees[index];
+  const used = form.value.config.rules.some((rule) => rule.steps.some((step) =>
+    step.type === "share" && [fee.key, `remainder:${fee.key}`].includes(step.source)));
+  if (used) {
+    uni.showToast({ title: "请先调整引用此费用的分摊步骤", icon: "none" });
+    return;
+  }
+  form.value.config.fees.splice(index, 1);
+};
 
 const addMember = () => {
   form.value.config.members.push({ key: createMemberKey(), name: "", emoji: "👤" });
@@ -231,7 +273,7 @@ const onStayDaysChange = (event) => {
     // 让 switch 回到当前配置，保留原规则，避免静默改变分摊比例。
     form.value.config.useStayDays = false;
     setTimeout(() => { form.value.config.useStayDays = true; }, 0);
-    uni.showToast({ title: "请先把规则中的按居住天数改为固定", icon: "none" });
+    uni.showToast({ title: "请先把规则中的天数比例改为固定", icon: "none" });
     return;
   }
   form.value.config.useStayDays = event.detail.value;
@@ -288,7 +330,7 @@ const changeStepType = (step, value) => {
 const addShare = (step) => step.shares.push(blankShare());
 const addReceiver = (step) => step.to.push(blankShare());
 
-const preview = ref({ waterBill: "", electricBill: "", gasBill: "", totalDays: 30, ownerDays: 0 });
+const preview = ref({ fees: {}, totalDays: 30, ownerDays: 0 });
 const previewRuleIndex = ref(0);
 const previewResult = ref([]);
 const previewError = ref("");
@@ -315,11 +357,9 @@ const runPreview = async () => {
     const result = await api.bill.preview({
       config: form.value.config,
       ruleName,
-      waterBill: Number(preview.value.waterBill) || 0,
-      electricBill: Number(preview.value.electricBill) || 0,
-      gasBill: Number(preview.value.gasBill) || 0,
+      fees: getFeeAmounts(form.value.config, preview.value.fees),
       totalDays: form.value.config.useStayDays ? preview.value.totalDays : null,
-      ownerDays: form.value.config.useStayDays ? preview.value.ownerDays : null,
+      days: form.value.config.useStayDays ? preview.value.ownerDays : null,
     });
     if (version === previewVersion) previewResult.value = result;
   } catch (error) {
@@ -331,6 +371,10 @@ const runPreview = async () => {
 
 const validate = () => {
   if (!form.value.name.trim()) return "请填写名称";
+  if (form.value.config.fees.some((fee) => !fee.name.trim())) return "费用名称不能为空";
+  const feeNames = form.value.config.fees.map((fee) => fee.name.trim());
+  if (new Set(feeNames).size !== feeNames.length) return "费用名称不能重复";
+  if (form.value.config.useStayDays && (!form.value.config.dayLabels.total.trim() || !form.value.config.dayLabels.counted.trim())) return "天数字段名称不能为空";
   if (form.value.config.members.some((member) => !member.name.trim())) return "人员名字不能为空";
   if (form.value.config.rules.some((rule) => !rule.name.trim())) return "规则名字不能为空";
   const names = form.value.config.rules.map((rule) => rule.name.trim());
@@ -396,7 +440,7 @@ onLoad(async (options) => {
       avatar: calculator.avatar || "📒",
       background: calculator.background || "",
       enableBackground: calculator.enableBackground !== false,
-      config: calculator.config,
+      config: { ...calculator.config, fees: getFeeDefinitions(calculator.config), dayLabels: getDayLabels(calculator.config) },
     };
   } catch (error) {
     console.error("加载计算器失败", error);
@@ -407,6 +451,7 @@ onLoad(async (options) => {
 <style lang="scss" scoped>
 .container {
   min-height: 100vh;
+  box-sizing: border-box;
   padding: 24rpx 24rpx 80rpx;
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #ffecd2 100%);
 }
@@ -425,6 +470,7 @@ onLoad(async (options) => {
   margin-bottom: 16rpx;
   color: #5a7c9a;
   font-weight: 600;
+  line-height: 1.5;
 }
 .section-title {
   margin-top: 48rpx;
@@ -435,6 +481,7 @@ onLoad(async (options) => {
   color: #7c95aa;
   font-size: 24rpx;
   margin-bottom: 16rpx;
+  line-height: 1.6;
 }
 .hint.inline {
   flex: 1;
@@ -442,12 +489,25 @@ onLoad(async (options) => {
 }
 .input,
 .picker {
+  box-sizing: border-box;
   background: #fafbfc;
   border: 1rpx solid #e8f0f5;
   border-radius: 24rpx;
-  padding: 20rpx 24rpx;
   color: #5a7c9a;
   font-size: 30rpx;
+}
+.input {
+  width: 100%;
+  min-width: 0;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 24rpx;
+}
+.picker {
+  min-height: 88rpx;
+  padding: 20rpx 24rpx;
+  line-height: 46rpx;
+  overflow-wrap: break-word;
 }
 .member-row,
 .share-row,
@@ -457,24 +517,59 @@ onLoad(async (options) => {
   align-items: center;
   margin-bottom: 16rpx;
 }
-.member-row .input,
-.share-row .input,
-.member-row .picker,
-.share-row .picker {
-  flex: 1;
+.share-row {
+  flex-wrap: wrap;
 }
-.emoji-input {
-  flex: 0 0 110rpx;
+.member-row .input,
+.share-row .input {
+  flex: 1 1 0;
+  width: 0;
+}
+.member-row .emoji-input {
+  flex: 0 0 88rpx;
+  width: 88rpx;
+  padding: 0 8rpx;
   text-align: center;
 }
-.weight-input {
-  flex: 0 0 140rpx;
+.member-row > picker,
+.member-picker {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.share-row .weight-input,
+.member-row .weight-input {
+  flex: 0 0 112rpx;
+  width: 112rpx;
+  padding: 0 16rpx;
+}
+.basis-picker {
+  flex: 0 0 100%;
+  min-width: 0;
+  order: 1;
+}
+.switch-row {
+  justify-content: space-between;
+  margin-top: 24rpx;
+}
+.switch-row .label {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.member-row switch,
+.switch-row switch {
+  flex-shrink: 0;
 }
 .remove,
 .link {
   color: #ff6b9d;
   font-size: 26rpx;
   padding: 8rpx;
+}
+.remove {
+  flex-shrink: 0;
+  line-height: 44rpx;
+  white-space: nowrap;
 }
 .rule-card,
 .step-card {
@@ -497,6 +592,9 @@ onLoad(async (options) => {
   font-size: 32rpx;
   font-weight: 600;
   border: none;
+  min-height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 24rpx;
   &::after {
     border: none;
   }

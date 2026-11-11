@@ -9,7 +9,6 @@ import java.util.Set;
 public final class CalculatorConfigValidator {
     public static final String STAY_DAYS = "days/totalDays";
     public static final String STAY_DAYS_PER_MEMBER = "days/totalDays/memberCount";
-    private static final Set<String> FEES = Set.of("water", "electric", "gas");
 
     private CalculatorConfigValidator() {}
 
@@ -20,6 +19,22 @@ public final class CalculatorConfigValidator {
     public static void validate(CalculatorConfig config) {
         require(config != null && config.getMembers() != null && config.getMembers().size() >= 2,
                 "至少需要两名人员");
+        List<FeeConfig> fees = FeeCatalog.definitions(config);
+        if (Boolean.TRUE.equals(config.getUseStayDays()) && config.getDayLabels() != null) {
+            for (String label : List.of("total", "counted")) {
+                require(config.getDayLabels().get(label) != null && !config.getDayLabels().get(label).isBlank(), "天数字段名称不能为空");
+            }
+        }
+        require(!fees.isEmpty(), "至少需要一项费用");
+        Set<String> feeKeys = new HashSet<>();
+        Set<String> feeNames = new HashSet<>();
+        for (FeeConfig fee : fees) {
+            require(fee != null && fee.getKey() != null && fee.getKey().matches("[a-zA-Z0-9_-]+")
+                    && !"total".equals(fee.getKey()), "费用缺少有效标识");
+            require(feeKeys.add(fee.getKey()), "费用标识重复: " + fee.getKey());
+            require(fee.getName() != null && !fee.getName().isBlank(), "费用名称不能为空");
+            require(feeNames.add(fee.getName().trim()), "费用名称不能重复: " + fee.getName());
+        }
         Set<String> keys = new HashSet<>();
         for (MemberConfig member : config.getMembers()) {
             require(member != null && member.getKey() != null && !member.getKey().isBlank(), "人员缺少标识");
@@ -32,11 +47,11 @@ public final class CalculatorConfigValidator {
             require(rule != null && rule.getName() != null && !rule.getName().isBlank(), "规则名字不能为空");
             require(names.add(rule.getName().trim()), "规则名字重复: " + rule.getName());
             require(rule.getSteps() != null && !rule.getSteps().isEmpty(), "规则「" + rule.getName() + "」没有任何步骤");
-            validateSteps(config, rule, keys);
+            validateSteps(config, rule, keys, feeKeys);
         }
     }
 
-    private static void validateSteps(CalculatorConfig config, RuleConfig rule, Set<String> keys) {
+    private static void validateSteps(CalculatorConfig config, RuleConfig rule, Set<String> keys, Set<String> fees) {
         Set<String> claimed = new HashSet<>();
         Set<String> remainders = new HashSet<>();
         for (StepConfig step : rule.getSteps()) {
@@ -53,11 +68,11 @@ public final class CalculatorConfigValidator {
             require(source != null, "分摊步骤缺少费用来源");
             boolean remainder = source.startsWith("remainder:");
             String origin = remainder ? source.substring("remainder:".length()) : source;
-            require("total".equals(origin) || FEES.contains(origin), "不认识的费用来源: " + source);
+            require("total".equals(origin) || fees.contains(origin), "费用来源不存在或已删除: " + source);
             if (remainder) {
                 require(remainders.remove(origin), "没有可用的剩余费用，或已分摊过: " + origin);
             } else {
-                Set<String> sources = "total".equals(origin) ? FEES : Set.of(origin);
+                Set<String> sources = "total".equals(origin) ? fees : Set.of(origin);
                 for (String fee : sources) require(claimed.add(fee), "费用重复分摊: " + fee);
             }
             BigDecimal sum = validateShares(config, step.getShares(), keys, true);
@@ -69,7 +84,7 @@ public final class CalculatorConfigValidator {
             }
         }
         require(remainders.isEmpty(), "规则「" + rule.getName() + "」还有剩余费用，请添加分摊剩余费用的步骤");
-        require(claimed.containsAll(FEES), "规则「" + rule.getName() + "」需覆盖总费用，或分别分摊水、电、燃气费");
+        require(claimed.containsAll(fees), "规则「" + rule.getName() + "」需分摊总费用，或覆盖全部费用项");
     }
 
     private static BigDecimal validateShares(CalculatorConfig config, List<ShareConfig> shares,
@@ -81,7 +96,7 @@ public final class CalculatorConfigValidator {
             String basis = share.getBasis();
             boolean days = usesStayDays(basis);
             require(basis == null || basis.isBlank() || (allowDays && days), "不认识的份额计算方式: " + basis);
-            require(!days || Boolean.TRUE.equals(config.getUseStayDays()), "规则按居住天数分摊，请开启居住天数输入");
+            require(!days || Boolean.TRUE.equals(config.getUseStayDays()), "规则按天数比例分摊，请启用天数比例");
             BigDecimal weight = share.getWeight();
             if (weight == null && (days || !allowDays)) weight = BigDecimal.ONE;
             require(weight != null && weight.signum() >= 0, "份额必须为非负数");

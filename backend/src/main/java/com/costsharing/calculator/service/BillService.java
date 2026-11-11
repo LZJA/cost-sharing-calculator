@@ -6,6 +6,7 @@ import com.costsharing.calculator.entity.Bill;
 import com.costsharing.calculator.entity.Calculator;
 import com.costsharing.calculator.formula.BillInput;
 import com.costsharing.calculator.formula.FormulaEngine;
+import com.costsharing.calculator.formula.FeeCatalog;
 import com.costsharing.calculator.formula.ShareResult;
 import com.costsharing.calculator.repository.BillRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -32,7 +34,7 @@ public class BillService {
                 request.getElectricBill(),
                 request.getGasBill(),
                 request.getTotalDays(),
-                request.getOwnerDays());
+                request.getDays() != null ? request.getDays() : request.getOwnerDays(), request.getFees());
         return FormulaEngine.calculate(request.getConfig(), request.getRuleName(), input);
     }
 
@@ -44,23 +46,23 @@ public class BillService {
                 request.getElectricBill(),
                 request.getGasBill(),
                 request.getTotalDays(),
-                request.getOwnerDays());
+                request.getDays() != null ? request.getDays() : request.getOwnerDays(), request.getFees());
         List<ShareResult> shares = FormulaEngine.calculate(
                 calculator.getConfig(), request.getRuleName(), input);
 
-        BigDecimal total = request.getWaterBill()
-                .add(request.getElectricBill())
-                .add(request.getGasBill());
+        Map<String, BigDecimal> fees = FeeCatalog.amounts(calculator.getConfig(), input);
+        BigDecimal total = fees.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Bill bill = new Bill();
         bill.setCalculatorId(calculator.getId());
         bill.setYear(request.getYear());
         bill.setMonth(request.getMonth());
-        bill.setWaterBill(request.getWaterBill());
-        bill.setElectricBill(request.getElectricBill());
-        bill.setGasBill(request.getGasBill());
+        bill.setFees(FeeCatalog.snapshot(calculator.getConfig(), fees));
+        bill.setWaterBill(fees.getOrDefault("water", BigDecimal.ZERO));
+        bill.setElectricBill(fees.getOrDefault("electric", BigDecimal.ZERO));
+        bill.setGasBill(fees.getOrDefault("gas", BigDecimal.ZERO));
         bill.setTotalDays(request.getTotalDays());
-        bill.setOwnerDays(request.getOwnerDays());
+        bill.setOwnerDays(input.getOwnerDays());
         bill.setRuleName(request.getRuleName());
         bill.setTotalAmount(total);
         bill.setShares(shares);

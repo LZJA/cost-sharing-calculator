@@ -154,7 +154,7 @@ const drawPoster = () => {
   ctx.setFontSize(10);
   ctx.setFillStyle("#999");
   ctx.setTextAlign("center");
-  ctx.fillText("水电燃气费分账计算器", w / 2, h - 15);
+  ctx.fillText("费用分摊统计", w / 2, h - 15);
 
   ctx.draw(false, () => {
     uni.canvasToTempFilePath(

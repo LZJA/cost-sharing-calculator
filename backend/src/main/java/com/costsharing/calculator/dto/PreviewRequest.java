@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /** 配规则时的试算，不落库。 */
 @Data
@@ -17,6 +18,8 @@ public class PreviewRequest {
 
     private String ruleName;
 
+    private Map<String, BigDecimal> fees;
+
     private BigDecimal waterBill;
 
     private BigDecimal electricBill;
@@ -26,4 +29,6 @@ public class PreviewRequest {
     private Integer totalDays;
 
     private Integer ownerDays;
+
+    private Integer days;
 }

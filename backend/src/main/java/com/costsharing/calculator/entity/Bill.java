@@ -1,6 +1,7 @@
 package com.costsharing.calculator.entity;
 
 import com.costsharing.calculator.formula.ShareResult;
+import com.costsharing.calculator.formula.FeeAmount;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -54,6 +55,10 @@ public class Bill {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private List<FeeAmount> fees;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "json")

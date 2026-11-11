@@ -18,19 +18,18 @@ public final class FormulaEngine {
     public static List<ShareResult> calculate(CalculatorConfig config, String ruleName, BillInput input) {
         CalculatorConfigValidator.validate(config);
         if (input == null) throw new IllegalArgumentException("请填写账单费用");
-        BillInput normalized = new BillInput(fee(input.getWaterBill()), fee(input.getElectricBill()),
-                fee(input.getGasBill()), input.getTotalDays(), input.getOwnerDays());
+        Map<String, BigDecimal> fees = FeeCatalog.amounts(config, input);
         RuleConfig rule = findRule(config, ruleName);
         Map<String, BigDecimal> amounts = new LinkedHashMap<>();
         config.getMembers().forEach(member -> amounts.put(member.getKey(), new BigDecimal("0.00")));
         Map<String, BigDecimal> remainders = new LinkedHashMap<>();
         for (StepConfig step : rule.getSteps()) {
-            if ("share".equals(step.getType())) applyShare(step, config, normalized, amounts, remainders);
+            if ("share".equals(step.getType())) applyShare(step, config, input, fees, amounts, remainders);
             else applyTransfer(step, amounts);
         }
         List<ShareResult> results = config.getMembers().stream().map(member -> new ShareResult(
                 member.getKey(), member.getName(), member.getEmoji(), amounts.get(member.getKey()))).toList();
-        BigDecimal total = normalized.getWaterBill().add(normalized.getElectricBill()).add(normalized.getGasBill());
+        BigDecimal total = fees.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal distributed = amounts.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         if (distributed.compareTo(total) != 0) throw new IllegalArgumentException("分摊金额合计与总费用不一致，请检查规则");
         return results;
@@ -46,18 +45,19 @@ public final class FormulaEngine {
     }
 
     private static void applyShare(StepConfig step, CalculatorConfig config, BillInput input,
+                                   Map<String, BigDecimal> fees,
                                    Map<String, BigDecimal> amounts, Map<String, BigDecimal> remainders) {
-        BigDecimal amount = feeOf(step.getSource(), input, remainders);
+        BigDecimal amount = feeOf(step.getSource(), fees, remainders);
         List<ShareConfig> shares = step.getShares();
         boolean usesDays = shares.stream().anyMatch(share -> CalculatorConfigValidator.usesStayDays(share.getBasis()));
         int memberCount = config.getMembers().size();
         BigDecimal commonDenominator = BigDecimal.ONE;
         if (usesDays) {
-            if (input.getTotalDays() == null || input.getTotalDays() < 1 || input.getTotalDays() > 31) {
-                throw new IllegalArgumentException("使用居住天数分摊时，总天数必须在 1 到 31 之间");
+            if (input.getTotalDays() == null || input.getTotalDays() < 1) {
+                throw new IllegalArgumentException("按天数比例分摊时，周期总天数必须大于 0");
             }
             if (input.getOwnerDays() == null || input.getOwnerDays() < 0 || input.getOwnerDays() > input.getTotalDays()) {
-                throw new IllegalArgumentException("居住天数必须在 0 到总天数之间");
+                throw new IllegalArgumentException("参与天数必须在 0 到周期总天数之间");
             }
             commonDenominator = BigDecimal.valueOf((long) input.getTotalDays() * memberCount);
         }
@@ -128,24 +128,9 @@ public final class FormulaEngine {
         return values.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private static BigDecimal feeOf(String source, BillInput input, Map<String, BigDecimal> remainders) {
+    private static BigDecimal feeOf(String source, Map<String, BigDecimal> fees, Map<String, BigDecimal> remainders) {
         if (source.startsWith("remainder:")) return remainders.remove(source.substring("remainder:".length()));
-        return switch (source) {
-            case "water" -> input.getWaterBill();
-            case "electric" -> input.getElectricBill();
-            case "gas" -> input.getGasBill();
-            case "total" -> input.getWaterBill().add(input.getElectricBill()).add(input.getGasBill());
-            default -> throw new IllegalArgumentException("不认识的费用来源: " + source);
-        };
-    }
-
-    private static BigDecimal fee(BigDecimal value) {
-        if (value == null) return new BigDecimal("0.00");
-        if (value.signum() < 0) throw new IllegalArgumentException("费用不能为负数");
-        try {
-            return value.setScale(2, RoundingMode.UNNECESSARY);
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("费用最多保留两位小数");
-        }
+        if ("total".equals(source)) return fees.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        return fees.get(source);
     }
 }

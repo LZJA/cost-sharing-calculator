@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS bills (
     rule_name VARCHAR(50) COMMENT '使用的规则名',
     total_amount DECIMAL(10, 2) NOT NULL COMMENT '总费用',
     shares JSON NOT NULL COMMENT '每人金额，含当时的名字和头像',
+    fees JSON COMMENT '自定义费用明细，含当时的名称、头像和金额；旧账为空时使用原三列',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     INDEX idx_bill_calculator_month (calculator_id, year, month)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通用账单';

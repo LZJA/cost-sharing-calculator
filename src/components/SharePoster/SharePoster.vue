@@ -18,6 +18,7 @@
 
 <script setup>
 import { computed, ref, nextTick, getCurrentInstance } from "vue";
+import { getBillFees } from "@/utils/formula.js";
 
 const props = defineProps({
   data: {
@@ -30,7 +31,8 @@ const emit = defineEmits(["close"]);
 
 const visible = ref(false);
 const canvasWidth = ref(300);
-const canvasHeight = computed(() => Math.max(500, 380 + (props.data.shares || []).length * 30));
+const canvasHeight = computed(() => Math.max(500,
+  290 + (getBillFees(props.data).length + (props.data.shares || []).length) * 30));
 const tempFilePath = ref("");
 
 const instance = getCurrentInstance();
@@ -51,7 +53,7 @@ const drawPoster = () => {
   const ctx = uni.createCanvasContext("shareCanvas", instance);
   const w = canvasWidth.value;
   const h = canvasHeight.value;
-  const { month, waterBill, electricBill, gasBill, shares, totalAmount } = props.data;
+  const { month, shares, totalAmount } = props.data;
 
   // Background
   const gradient = ctx.createLinearGradient(0, 0, w, h);
@@ -105,9 +107,9 @@ const drawPoster = () => {
     y += lineHeight;
   };
 
-  drawRow("💧 水费", `${waterBill || 0} 元`);
-  drawRow("⚡ 电费", `${electricBill || 0} 元`);
-  drawRow("🔥 燃气费", `${gasBill || 0} 元`);
+  getBillFees(props.data).forEach((fee) => {
+    drawRow(`${fee.emoji || '💰'} ${fee.name}`, `${Number(fee.amount).toFixed(2)} 元`);
+  });
 
   // Divider
   y -= 10;

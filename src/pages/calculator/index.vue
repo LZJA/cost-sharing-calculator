@@ -21,25 +21,17 @@
       </view>
 
       <view v-if="config.useStayDays" class="form-group">
-        <text class="label">📆 月份总天数</text>
+        <text class="label">📆 {{ dayLabels.total }}</text>
         <input v-model.number="form.totalDays" type="number" class="input" placeholder="例如：30" />
       </view>
       <view v-if="config.useStayDays" class="form-group">
-        <text class="label">🏠 居住天数</text>
+        <text class="label">📅 {{ dayLabels.counted }}</text>
         <input v-model.number="form.ownerDays" type="number" class="input" placeholder="0" />
       </view>
 
-      <view class="form-group">
-        <text class="label">💧 水费（元）</text>
-        <input v-model="form.waterBill" type="digit" class="input" placeholder="0.00" />
-      </view>
-      <view class="form-group">
-        <text class="label">⚡ 电费（元）</text>
-        <input v-model="form.electricBill" type="digit" class="input" placeholder="0.00" />
-      </view>
-      <view class="form-group">
-        <text class="label">🔥 燃气费（元）</text>
-        <input v-model="form.gasBill" type="digit" class="input" placeholder="0.00" />
+      <view v-for="fee in feeDefinitions" :key="fee.key" class="form-group">
+        <text class="label">{{ fee.emoji || '💰' }} {{ fee.name }}（元）</text>
+        <input v-model="form.fees[fee.key]" type="digit" class="input" placeholder="0.00" />
       </view>
 
       <view v-if="config.rules.length > 1" class="form-group">
@@ -84,9 +76,12 @@ import dayjs from "dayjs";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
 import api from "@/api/costSharingApi.js";
+import { getFeeDefinitions, getFeeAmounts, getBillFees, getDayLabels } from "@/utils/formula.js";
 
 const calculator = ref({});
-const config = computed(() => calculator.value.config || { members: [], rules: [], useStayDays: false });
+const config = computed(() => calculator.value.config || { fees: [], members: [], rules: [], useStayDays: false });
+const feeDefinitions = computed(() => getFeeDefinitions(config.value));
+const dayLabels = computed(() => getDayLabels(config.value));
 
 const currentYear = dayjs().year();
 const yearOptions = Array.from({ length: 10 }, (_, i) => `${currentYear - i}年`);
@@ -100,9 +95,7 @@ const form = ref({
   month: dayjs().month() + 1,
   totalDays: "",
   ownerDays: 0,
-  waterBill: "",
-  electricBill: "",
-  gasBill: "",
+  fees: {},
 });
 
 const savedBill = ref(null);
@@ -151,11 +144,9 @@ const calculateBill = async () => {
       calculatorId: calculator.value.id,
       year: form.value.year,
       month: form.value.month,
-      waterBill: parseFloat(form.value.waterBill) || 0,
-      electricBill: parseFloat(form.value.electricBill) || 0,
-      gasBill: parseFloat(form.value.gasBill) || 0,
+      fees: getFeeAmounts(config.value, form.value.fees),
       totalDays: config.value.useStayDays ? form.value.totalDays : null,
-      ownerDays: config.value.useStayDays ? form.value.ownerDays : null,
+      days: config.value.useStayDays ? form.value.ownerDays : null,
       ruleName,
     });
     if (version === inputVersion) {
@@ -171,9 +162,7 @@ const calculateBill = async () => {
 
 const posterData = computed(() => ({
   month: savedBill.value?.month,
-  waterBill: savedBill.value?.waterBill || 0,
-  electricBill: savedBill.value?.electricBill || 0,
-  gasBill: savedBill.value?.gasBill || 0,
+  fees: getBillFees(savedBill.value),
   shares: shares.value.map((share) => ({
     ...share,
     amount: share.amount.toFixed(2),
@@ -233,6 +222,11 @@ onLoad(async (options) => {
   padding: 20rpx 24rpx;
   color: #5a7c9a;
   font-size: 30rpx;
+}
+.input {
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 24rpx;
 }
 .button-group {
   display: flex;

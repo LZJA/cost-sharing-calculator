@@ -3,6 +3,7 @@ package com.costsharing.calculator.formula;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 迁移旧数据时用的默认规则。历史账单金额不重算。
@@ -21,6 +22,7 @@ public final class DefaultConfigs {
                 member("sister", "谢林珠", "🌸"),
                 member("datou", "张锦豪", "🌻")
         ));
+        config.setDayLabels(Map.of("total", "月份总天数", "counted", "房主居住天数"));
 
         StepConfig ownerStep = share("total", true, List.of(
                 daysShare("owner", BigDecimal.ONE)
@@ -78,6 +80,7 @@ public final class DefaultConfigs {
 
     private static CalculatorConfig base(boolean useStayDays, List<MemberConfig> members) {
         CalculatorConfig config = new CalculatorConfig();
+        config.setFees(FeeCatalog.legacyFees());
         config.setUseStayDays(useStayDays);
         config.setMembers(members);
         return config;
