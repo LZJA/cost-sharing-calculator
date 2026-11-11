@@ -132,25 +132,25 @@
       <view v-if="formData.splitRule === '特殊分账'" class="summary">
         <text class="summary-title">💫 费用分摊明细：</text>
         <view class="result-item">
-          <text class="result-label">🍐 李子应承担</text>
+          <text class="result-label">{{ liziLabel }}应承担</text>
           <text class="result-value"
             >{{ formatAmount(result.liziAmount) }} 元</text
           >
         </view>
         <view class="result-item">
-          <text class="result-label">🕊️ 鸽子应承担</text>
+          <text class="result-label">{{ geziLabel }}应承担</text>
           <text class="result-value"
             >{{ formatAmount(result.geziAmount) }} 元</text
           >
         </view>
         <view class="result-item">
-          <text class="result-label">🌸 春风应承担</text>
+          <text class="result-label">{{ chunfengLabel }}应承担</text>
           <text class="result-value"
             >{{ formatAmount(result.chunfengAmount) }} 元</text
           >
         </view>
         <view class="result-item">
-          <text class="result-label">🍊 橙子应承担</text>
+          <text class="result-label">{{ chengziLabel }}应承担</text>
           <text class="result-value"
             >{{ formatAmount(result.chengziAmount) }} 元</text
           >
@@ -176,6 +176,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { getLastMonth, formatAmount } from "@/utils/helpers.js";
+import { CONFIG } from "@/utils/config.js";
 import SharePoster from "@/components/SharePoster/SharePoster.vue";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
 import api from "@/api/costSharingApi.js";
@@ -226,8 +227,15 @@ const errors = ref({});
 const showResult = ref(false);
 const isShareMode = ref(false);
 
+const geziPeople = CONFIG.PEOPLE.gezi;
+const geziLabels = CONFIG.LABELS.gezi;
+const liziLabel = geziLabels.lizi;
+const geziLabel = geziLabels.gezi;
+const chunfengLabel = geziLabels.chunfeng;
+const chengziLabel = geziLabels.chengzi;
+
 // 页面标题
-const pageTitle = ref("鸽子的分账计算器");
+const pageTitle = ref(geziPeople.title);
 
 // 计算结果
 const result = ref({
@@ -438,7 +446,7 @@ const toggleShareMode = () => {
 // 页面分享配置
 const onShareAppMessage = () => {
   return {
-    title: "鸽子的分账计算器",
+    title: geziPeople.title,
     desc: "轻松计算水电燃气费用分摊，让合租生活更简单！",
     path: "/pages/gezi/index",
     imageUrl: "", // 可以设置自定义分享图片
@@ -454,7 +462,7 @@ const onShareAppMessage = () => {
 // 分享到朋友圈
 const onShareTimeline = () => {
   return {
-    title: "鸽子的分账计算器 - 让合租生活更简单",
+    title: `${geziPeople.title} - 让合租生活更简单`,
     query: "",
     imageUrl: "", // 可以设置自定义分享图片
     success: function (res) {

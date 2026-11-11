@@ -96,7 +96,7 @@
       </view>
 
       <view class="form-group">
-        <text class="label">🏠 房主居住天数</text>
+        <text class="label">🏠 {{ ownerName }}居住天数</text>
         <input
           type="number"
           v-model.number="formData.ownerDays"
@@ -107,7 +107,7 @@
           step="1"
         />
         <text v-if="errors.ownerDays" class="error"
-          >⚠️ 房主居住天数必须为0至总天数之间的整数</text
+          >⚠️ {{ ownerName }}居住天数必须为0至总天数之间的整数</text>
         >
       </view>
 
@@ -140,7 +140,7 @@
 
       <view class="result-item">
         <text class="result-label">
-          👤 房主应承担
+          {{ ownerLabel }}应承担
           <text v-if="hasOwnerDaysValue" class="subnote"
             >（居住{{ formData.ownerDays }}天）</text
           >
@@ -160,13 +160,13 @@
       <view class="summary">
         <text class="summary-title">💫 剩余费用分摊：</text>
         <view class="result-item">
-          <text class="result-label">🌸 谢林珠应承担</text>
+          <text class="result-label">{{ sisterLabel }}应承担</text>
           <text class="result-value"
             >{{ formatAmount(result.sisterAmount) }} 元</text
           >
         </view>
         <view class="result-item">
-          <text class="result-label">🌻 张锦豪应承担</text>
+          <text class="result-label">{{ datouLabel }}应承担</text>
           <text class="result-value"
             >{{ formatAmount(result.datouAmount) }} 元</text
           >
@@ -255,8 +255,15 @@ const hasOwnerDaysValue = computed(() => {
   return value === 0 || !!value;
 });
 
+const liziPeople = CONFIG.PEOPLE.lizi;
+const liziLabels = CONFIG.LABELS.lizi;
+const ownerName = liziPeople.members.owner.name;
+const ownerLabel = liziLabels.owner;
+const sisterLabel = liziLabels.sister;
+const datouLabel = liziLabels.datou;
+
 // 页面标题
-const pageTitle = ref("李子的分账计算器");
+const pageTitle = ref(liziPeople.title);
 
 // 计算结果
 const result = ref({
@@ -468,7 +475,7 @@ const toggleShareMode = () => {
 // 页面分享配置
 const onShareAppMessage = () => {
   return {
-    title: "李子的分账计算器",
+    title: liziPeople.title,
     desc: "轻松计算水电燃气费用分摊，让合租生活更简单！",
     path: "/pages/lizi/index",
     imageUrl: "", // 可以设置自定义分享图片
@@ -484,7 +491,7 @@ const onShareAppMessage = () => {
 // 分享到朋友圈
 const onShareTimeline = () => {
   return {
-    title: "李子的分账计算器 - 让合租生活更简单",
+    title: `${liziPeople.title} - 让合租生活更简单`,
     query: "",
     imageUrl: "", // 可以设置自定义分享图片
     success: function (res) {

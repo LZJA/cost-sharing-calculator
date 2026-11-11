@@ -33,6 +33,20 @@
       }
     },
     {
+      "path": "pages/calculator/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "分账计算"
+      }
+    },
+    {
+      "path": "pages/calculator/edit",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "配置分账计算器"
+      }
+    },
+    {
       "path": "pages/billList/index",
       "style": {
         "navigationStyle": "custom",

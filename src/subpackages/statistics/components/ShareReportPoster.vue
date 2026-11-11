@@ -18,6 +18,7 @@
 
 <script setup>
 import { ref, getCurrentInstance } from "vue";
+import { CONFIG } from "@/utils/config.js";
 
 const props = defineProps({
   data: {
@@ -82,7 +83,8 @@ const drawPoster = () => {
   ctx.setFontSize(22);
   ctx.setFillStyle("#5a7c9a");
   ctx.setTextAlign("center");
-  const typeText = billType === "lizi" ? "🌰 李子账单" : "🕊️ 鸽子账单";
+  const group = CONFIG.PEOPLE[billType] || CONFIG.PEOPLE.lizi;
+  const typeText = `${group.emoji} ${group.shortTitle}`;
   ctx.fillText(`${typeText} 统计报告`, w / 2, 40);
 
   // Date range

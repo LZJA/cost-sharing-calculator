@@ -10,14 +10,14 @@
         :class="{ active: billType === 'lizi' }"
         @tap="switchBillType('lizi')"
       >
-        🌰 李子账单
+        {{ liziTabLabel }}
       </view>
       <view
         class="tab"
         :class="{ active: billType === 'gezi' }"
         @tap="switchBillType('gezi')"
       >
-        🕊️ 鸽子账单
+        {{ geziTabLabel }}
       </view>
     </view>
 
@@ -316,6 +316,7 @@ import {
   generateComboChartData,
 } from "@/utils/statisticsHelper.js";
 import { formatAmount } from "@/utils/helpers.js";
+import { CONFIG } from "@/utils/config.js";
 import dayjs from "dayjs";
 
 // 获取 URL 参数
@@ -326,6 +327,8 @@ const pageParams = ref({
 
 // 账单类型
 const billType = ref("lizi");
+const liziTabLabel = `${CONFIG.PEOPLE.lizi.emoji} ${CONFIG.PEOPLE.lizi.shortTitle}`;
+const geziTabLabel = `${CONFIG.PEOPLE.gezi.emoji} ${CONFIG.PEOPLE.gezi.shortTitle}`;
 
 // 加载状态
 const loading = ref(false);

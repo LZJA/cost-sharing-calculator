@@ -5,6 +5,7 @@
 
 import api from "@/api/costSharingApi.js";
 import dayjs from "dayjs";
+import { CONFIG } from "@/utils/config.js";
 
 /**
  * 获取统计数据
@@ -186,17 +187,17 @@ export function calculateSplitStatistics(bills, type) {
 
     return [
       {
-        name: "👤 房主",
+        name: CONFIG.LABELS.lizi.owner,
         amount: ownerTotal,
         percentage: grandTotal > 0 ? (ownerTotal / grandTotal * 100).toFixed(1) : 0,
       },
       {
-        name: "🌸 谢林珠",
+        name: CONFIG.LABELS.lizi.sister,
         amount: sisterTotal,
         percentage: grandTotal > 0 ? (sisterTotal / grandTotal * 100).toFixed(1) : 0,
       },
       {
-        name: "🌻 张锦豪",
+        name: CONFIG.LABELS.lizi.datou,
         amount: datouTotal,
         percentage: grandTotal > 0 ? (datouTotal / grandTotal * 100).toFixed(1) : 0,
       },
@@ -210,22 +211,22 @@ export function calculateSplitStatistics(bills, type) {
 
     return [
       {
-        name: "🍐 李子",
+        name: CONFIG.LABELS.gezi.lizi,
         amount: liziTotal,
         percentage: grandTotal > 0 ? (liziTotal / grandTotal * 100).toFixed(1) : 0,
       },
       {
-        name: "🕊️ 鸽子",
+        name: CONFIG.LABELS.gezi.gezi,
         amount: geziTotal,
         percentage: grandTotal > 0 ? (geziTotal / grandTotal * 100).toFixed(1) : 0,
       },
       {
-        name: "🌸 春风",
+        name: CONFIG.LABELS.gezi.chunfeng,
         amount: chunfengTotal,
         percentage: grandTotal > 0 ? (chunfengTotal / grandTotal * 100).toFixed(1) : 0,
       },
       {
-        name: "🍊 橙子",
+        name: CONFIG.LABELS.gezi.chengzi,
         amount: chengziTotal,
         percentage: grandTotal > 0 ? (chengziTotal / grandTotal * 100).toFixed(1) : 0,
       },

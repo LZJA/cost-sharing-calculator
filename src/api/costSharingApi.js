@@ -195,11 +195,28 @@ if (isDevelopment()) {
 // ==================== 卡片API ====================
 
 export default {
-  // 卡片相关
+  // 卡片相关（旧接口，保留）
   card: {
     getAll: () => request('/cards'),
     getByType: (type) => request(`/cards/${type}`),
     save: (data) => request('/cards', 'POST', data)
+  },
+
+  // 可配置的分账计算器
+  calculator: {
+    getAll: () => request('/calculators'),
+    getById: (id) => request(`/calculators/${id}`),
+    create: (data) => request('/calculators', 'POST', data),
+    update: (id, data) => request(`/calculators/${id}`, 'PUT', data),
+    delete: (id) => request(`/calculators/${id}`, 'DELETE')
+  },
+
+  // 通用账单，金额由服务端按规则重算
+  bill: {
+    preview: (data) => request('/bills/preview', 'POST', data),
+    save: (data) => request('/bills', 'POST', data),
+    getPage: (params = {}) => request('/bills', 'GET', params),
+    delete: (id) => request(`/bills/${id}`, 'DELETE')
   },
 
   // 李子账单相关

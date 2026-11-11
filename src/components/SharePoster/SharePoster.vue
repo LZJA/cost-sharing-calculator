@@ -18,6 +18,7 @@
 
 <script setup>
 import { ref, onMounted, getCurrentInstance } from "vue";
+import { CONFIG } from "@/utils/config.js";
 
 const props = defineProps({
   data: {
@@ -140,7 +141,7 @@ const drawPoster = () => {
 
   if (!splitRule) {
     // Lizi Page Logic
-    drawRow(`👤 房主 (${ownerDays}天)`, `${result.ownerAmount} 元`);
+    drawRow(`${CONFIG.LABELS.lizi.owner} (${ownerDays}天)`, `${result.ownerAmount} 元`);
     drawRow("📊 剩余费用", `${result.remainingAmount} 元`);
 
     y += 10;
@@ -158,8 +159,8 @@ const drawPoster = () => {
     ctx.fillText("💫 分摊结果：", leftX, y);
     y += lineHeight;
 
-    drawRow("🌸 谢林珠", `${result.sisterAmount} 元`, "#5a7c9a", true);
-    drawRow("🌻 张锦豪", `${result.datouAmount} 元`, "#5a7c9a", true);
+    drawRow(CONFIG.LABELS.lizi.sister, `${result.sisterAmount} 元`, "#5a7c9a", true);
+    drawRow(CONFIG.LABELS.lizi.datou, `${result.datouAmount} 元`, "#5a7c9a", true);
   } else {
     // Gezi Page Logic
     if (splitRule === "普通分账") {
@@ -180,10 +181,10 @@ const drawPoster = () => {
       ctx.fillText("💫 费用分摊明细：", leftX, y);
       y += lineHeight;
 
-      drawRow("🍐 李子应承担", `${result.liziAmount} 元`, "#5a7c9a", true);
-      drawRow("🕊️ 鸽子应承担", `${result.geziAmount} 元`, "#5a7c9a", true);
-      drawRow("🌸 春风应承担", `${result.chunfengAmount} 元`, "#5a7c9a", true);
-      drawRow("🍊 橙子应承担", `${result.chengziAmount} 元`, "#5a7c9a", true);
+      drawRow(`${CONFIG.LABELS.gezi.lizi}应承担`, `${result.liziAmount} 元`, "#5a7c9a", true);
+      drawRow(`${CONFIG.LABELS.gezi.gezi}应承担`, `${result.geziAmount} 元`, "#5a7c9a", true);
+      drawRow(`${CONFIG.LABELS.gezi.chunfeng}应承担`, `${result.chunfengAmount} 元`, "#5a7c9a", true);
+      drawRow(`${CONFIG.LABELS.gezi.chengzi}应承担`, `${result.chengziAmount} 元`, "#5a7c9a", true);
     }
   }
 

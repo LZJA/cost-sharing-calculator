@@ -183,6 +183,7 @@
 import { ref, computed, onMounted } from "vue";
 import api from "@/api/costSharingApi.js";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
+import { CONFIG } from "@/utils/config.js";
 
 // 滑动操作选项
 const swipeOptions = ref([
@@ -507,7 +508,8 @@ onMounted(() => {
   const options = currentPage.options || {};
 
   billType.value = options.type || "lizi";
-  pageTitle.value = billType.value === "lizi" ? "李子账单列表" : "鸽子账单列表";
+  const group = CONFIG.PEOPLE[billType.value] || CONFIG.PEOPLE.lizi;
+  pageTitle.value = `${group.shortTitle}列表`;
 
   // 初始化年份选项
   initYearOptions();

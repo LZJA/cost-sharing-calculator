@@ -15,73 +15,46 @@
 
     <!-- 卡片列表 -->
     <view class="cards-container">
-      <!-- 李子的分账计算器 -->
       <view
+        v-for="calculator in calculators"
+        :key="calculator.id"
         class="card"
-        :class="{ 'has-bg': liziCard.background && liziCard.enableBackground }"
-        @click="navigateToLizi"
+        :class="{ 'has-bg': calculator.background && calculator.enableBackground }"
+        @click="openCalculator(calculator)"
       >
         <image
-          v-if="liziCard.background && liziCard.enableBackground"
+          v-if="calculator.background && calculator.enableBackground"
           mode="aspectFill"
-          :src="liziCard.background"
+          :src="calculator.background"
           class="card-bg-image"
         />
         <view
-          v-if="liziCard.background && liziCard.enableBackground"
+          v-if="calculator.background && calculator.enableBackground"
           class="card-overlay"
         ></view>
         <view class="card-header">
           <view class="card-avatars">
-            <view class="avatar">{{ liziCard.avatar }}</view>
+            <view class="avatar">{{ calculator.avatar || "📒" }}</view>
           </view>
         </view>
         <view class="card-content">
-          <text class="card-title">{{ liziCard.name }}</text>
-          <text class="card-balance">{{ liziCard.description }}</text>
+          <text class="card-title">{{ calculator.name }}</text>
+          <text class="card-balance">{{ calculator.description }}</text>
         </view>
         <view class="card-footer">
-          <view class="card-action-icon" @tap.stop="editLiziCard">
+          <view class="card-action-icon" @tap.stop="editCalculator(calculator)">
             <text>✏️</text>
           </view>
-          <view class="card-action-icon" @tap.stop="editBackground('lizi')">
+          <view class="card-action-icon" @tap.stop="editBackground(calculator.id)">
             <text>🎨</text>
           </view>
         </view>
       </view>
 
-      <!-- 鸽子的分账计算器 -->
-      <view
-        class="card"
-        :class="{ 'has-bg': geziCard.background && geziCard.enableBackground }"
-        @click="navigateToGezi"
-      >
-        <image
-          v-if="geziCard.background && geziCard.enableBackground"
-          mode="aspectFill"
-          :src="geziCard.background"
-          class="card-bg-image"
-        />
-        <view
-          v-if="geziCard.background && geziCard.enableBackground"
-          class="card-overlay"
-        ></view>
-        <view class="card-header">
-          <view class="card-avatars">
-            <view class="avatar">{{ geziCard.avatar }}</view>
-          </view>
-        </view>
+      <view class="card add-card" @click="createCalculator">
         <view class="card-content">
-          <text class="card-title">{{ geziCard.name }}</text>
-          <text class="card-balance">{{ geziCard.description }}</text>
-        </view>
-        <view class="card-footer">
-          <view class="card-action-icon" @tap.stop="editGeziCard">
-            <text>✏️</text>
-          </view>
-          <view class="card-action-icon" @tap.stop="editBackground('gezi')">
-            <text>🎨</text>
-          </view>
+          <text class="card-title">＋ 新增分账计算器</text>
+          <text class="card-balance">自己定人员和分账规则</text>
         </view>
       </view>
 
@@ -197,64 +170,33 @@ import {
   uploadImageWithCompress,
   deleteFromCloud,
 } from "@/utils/uploadImage.js";
-
 // 状态栏高度
 const statusBarHeight = ref(0);
 
-// 卡片数据
-const liziCard = ref({
-  name: "李子的分账计算器",
-  description: "分账让生活更简单",
-  avatar: "🍐",
-  background: "",
-  enableBackground: true,
-});
-
-const geziCard = ref({
-  name: "鸽子的分账计算器",
-  description: "记录每一份美好小账单",
-  avatar: "🕊️",
-  background: "",
-  enableBackground: true,
-});
+// 计算器列表，从后端读取
+const calculators = ref([]);
 
 // 弹窗相关状态
 const showEditModal = ref(false);
 const editingCard = ref({});
 const editingCardType = ref("");
 
-// 导航到李子的分账计算器
-const navigateToLizi = () => {
+const openCalculator = (calculator) => {
   uni.navigateTo({
-    url: "/pages/lizi/index",
-    query: {
-      name: liziCard.value.name,
-    },
+    url: `/pages/calculator/index?id=${calculator.id}`,
     fail: (err) => {
       console.error("导航失败", err);
-      uni.showToast({
-        title: "页面跳转失败",
-        icon: "none",
-      });
+      uni.showToast({ title: "页面跳转失败", icon: "none" });
     },
   });
 };
 
-// 导航到鸽子的分账计算器
-const navigateToGezi = () => {
-  uni.navigateTo({
-    url: "/pages/gezi/index",
-    query: {
-      name: geziCard.value.name,
-    },
-    fail: (err) => {
-      console.error("导航失败", err);
-      uni.showToast({
-        title: "页面跳转失败",
-        icon: "none",
-      });
-    },
-  });
+const createCalculator = () => {
+  uni.navigateTo({ url: "/pages/calculator/edit" });
+};
+
+const editCalculator = (calculator) => {
+  uni.navigateTo({ url: `/pages/calculator/edit?id=${calculator.id}` });
 };
 
 // 导航到统计分析页面
@@ -269,20 +211,6 @@ const navigateToStatistics = () => {
       });
     },
   });
-};
-
-// 编辑李子卡片
-const editLiziCard = () => {
-  editingCard.value = { ...liziCard.value };
-  editingCardType.value = "lizi";
-  showEditModal.value = true;
-};
-
-// 编辑鸽子卡片
-const editGeziCard = () => {
-  editingCard.value = { ...geziCard.value };
-  editingCardType.value = "gezi";
-  showEditModal.value = true;
 };
 
 // 关闭编辑弹窗
@@ -314,15 +242,9 @@ const saveCardEdit = async () => {
       type: editingCardType.value,
     };
 
-    // 调用 API 保存卡片数据
-    const savedCard = await api.card.save(cardData);
-
-    // 更新本地显示数据
-    if (editingCardType.value === "lizi") {
-      liziCard.value = { ...editingCard.value };
-    } else if (editingCardType.value === "gezi") {
-      geziCard.value = { ...editingCard.value };
-    }
+    await api.calculator.update(editingCardType.value, cardData);
+    const target = calculators.value.find((item) => item.id === editingCardType.value);
+    if (target) Object.assign(target, editingCard.value);
 
     uni.showToast({
       title: "保存成功",
@@ -358,7 +280,7 @@ const cropImage = (imagePath, cardType) => {
 };
 
 // 设置卡片背景
-const setCardBackground = async (tempFilePath, cardType) => {
+const setCardBackground = async (tempFilePath, calculatorId) => {
   try {
     uni.showLoading({ title: "上传中..." });
 
@@ -368,12 +290,8 @@ const setCardBackground = async (tempFilePath, cardType) => {
       quality: 60,
       needCompress: true,
     });
-    let card = "";
-    if (cardType === "lizi") {
-      card = liziCard.value;
-    } else if (cardType === "gezi") {
-      card = geziCard.value;
-    }
+    const card = calculators.value.find((item) => item.id === calculatorId);
+    if (!card) return;
     // 删除旧背景图
     if (card.background?.startsWith("cloud://")) {
       await deleteFromCloud(card.background);
@@ -383,10 +301,13 @@ const setCardBackground = async (tempFilePath, cardType) => {
     card.background = fileID;
     card.enableBackground = true;
 
-    // 保存到数据库
-    await api.card.save({
-      type: cardType,
-      ...card,
+    await api.calculator.update(calculatorId, {
+      name: card.name,
+      description: card.description,
+      avatar: card.avatar,
+      background: card.background,
+      enableBackground: true,
+      config: card.config,
     });
 
     uni.hideLoading();
@@ -436,41 +357,11 @@ const editBackground = (type) => {
   });
 };
 
-// 加载卡片数据
 const loadCardData = async () => {
   try {
-    // 从 API 加载所有卡片数据
-    const cards = await api.card.getAll();
-
-    // 查找李子和鸽子的卡片
-    const liziData = cards.find((card) => card.type === "lizi");
-    const geziData = cards.find((card) => card.type === "gezi");
-
-    // 更新李子卡片数据
-    if (liziData) {
-      liziCard.value = {
-        ...liziCard.value,
-        ...liziData,
-        enableBackground:
-          liziData.enableBackground !== undefined
-            ? liziData.enableBackground
-            : false,
-      };
-    }
-
-    // 更新鸽子卡片数据
-    if (geziData) {
-      geziCard.value = {
-        ...geziCard.value,
-        ...geziData,
-        enableBackground:
-          geziData.enableBackground !== undefined
-            ? geziData.enableBackground
-            : false,
-      };
-    }
+    calculators.value = (await api.calculator.getAll()) || [];
   } catch (e) {
-    console.error("加载卡片数据失败", e);
+    console.error("加载计算器失败", e);
   }
 };
 

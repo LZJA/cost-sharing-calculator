@@ -83,6 +83,42 @@ ON DUPLICATE KEY UPDATE
     avatar = VALUES(avatar);
 
 -- ============================================
+-- 可配置计算器（人员和规则在 config JSON 里）
+-- ============================================
+CREATE TABLE IF NOT EXISTS calculators (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    name VARCHAR(100) NOT NULL COMMENT '计算器名称',
+    description VARCHAR(200) COMMENT '描述语',
+    avatar VARCHAR(10) COMMENT '头像（emoji）',
+    background LONGTEXT COMMENT '背景图片',
+    enable_background BOOLEAN NOT NULL DEFAULT TRUE COMMENT '是否启用背景图',
+    legacy_key VARCHAR(10) UNIQUE COMMENT '旧数据来源：lizi 或 gezi，新建的为空',
+    config JSON NOT NULL COMMENT '人员、输入项和分账规则',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分账计算器';
+
+-- ============================================
+-- 通用账单（每人金额在 shares JSON 里，带当时的名字）
+-- ============================================
+CREATE TABLE IF NOT EXISTS bills (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    calculator_id BIGINT NOT NULL COMMENT '所属计算器',
+    year INT NOT NULL COMMENT '年份',
+    month INT NOT NULL COMMENT '月份',
+    water_bill DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '水费',
+    electric_bill DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '电费',
+    gas_bill DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '燃气费',
+    total_days INT COMMENT '月份总天数',
+    owner_days INT COMMENT '居住天数',
+    rule_name VARCHAR(50) COMMENT '使用的规则名',
+    total_amount DECIMAL(10, 2) NOT NULL COMMENT '总费用',
+    shares JSON NOT NULL COMMENT '每人金额，含当时的名字和头像',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_bill_calculator_month (calculator_id, year, month)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通用账单';
+
+-- ============================================
 -- 查询语句示例
 -- ============================================
 
