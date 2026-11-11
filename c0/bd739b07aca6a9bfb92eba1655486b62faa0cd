@@ -1,0 +1,92 @@
+src/pages/calculator/edit.vue
+  s_4f451d265ed3e6::t_bd7a841f6ac8d6 34,87-89,91,179-184,228
+  s_4f451d265ed3e6::t_59dd0b2fe0e795 146,162,295-300,312,315,324,326
+  s_4f451d265ed3e6::t_02fe0b887af2cb 33,227
+  s_4f451d265ed3e6::t_cde13e403bfbd2 166,226,229-236,306-309,316-323,327-328
+backend/src/test/java/com/costsharing/calculator/formula/FormulaEngineTest.java
+  s_4f451d265ed3e6::t_8e2574ac346570 224-235
+  s_4f451d265ed3e6::t_e098661efadf7c 8-10,18,36,38,43,92-168,171,174,176-223,236-247
+  s_4f451d265ed3e6::t_50be7b74804f2d 12
+  s_4f451d265ed3e6::t_196a337175d783 169-170,172-173,175
+backend/src/main/java/com/costsharing/calculator/service/CalculatorService.java
+  s_4f451d265ed3e6::t_707d3d662b8bdc 5,34,43
+src/components/SharePoster/SharePoster.vue
+  s_4f451d265ed3e6::t_dfbfa9ee3b90a9 4,273,279-280
+  s_4f451d265ed3e6::t_71a96647f2cb0c 20,33,38-39,41-42,268-269
+  s_04019c3a011b2f::t_17b905ef72a6c1 281-282
+backend/src/main/java/com/costsharing/calculator/repository/BillMigrationRepository.java
+  s_4f451d265ed3e6::t_afe702b4c8378d 1-7
+src/utils/formula.js
+  s_4f451d265ed3e6::t_ae8eac99fa15c2 1
+backend/src/main/java/com/costsharing/calculator/service/BillMigrationRunner.java
+  s_4f451d265ed3e6::t_bd7a841f6ac8d6 55-60
+  s_4f451d265ed3e6::t_afe702b4c8378d 4,12,26,30,43,66-68,92,96-98,121-133
+  s_4f451d265ed3e6::t_8e2574ac346570 50-54,61-62
+src/pages/calculator/index.vue
+  s_4f451d265ed3e6::t_71a96647f2cb0c 53,81,95,108-110,116-121,142-143,147,149-150,161-164,166-168,173-176
+backend/src/main/java/com/costsharing/calculator/formula/ShareConfig.java
+  s_4f451d265ed3e6::t_bd7a841f6ac8d6 19
+backend/src/main/java/com/costsharing/calculator/formula/FormulaEngine.java
+  s_4f451d265ed3e6::t_7a1df193c3594f 6,10,12,14,16,19-22,25,27-35,39-41,44-45,50,52-62,64,67-73,75,77-82,85,87-89,95-98,100-102,104,106-128,132,134-137,142-148
+backend/src/main/java/com/costsharing/calculator/formula/DefaultConfigs.java
+  s_4f451d265ed3e6::t_bd7a841f6ac8d6 8-9,26,102,106-125
+  s_04019c3a011b2f::t_f2ea41e36ce817 126-127
+src/subpackages/statistics/components/ShareReportPoster.vue
+  s_4f451d265ed3e6::t_dfbfa9ee3b90a9 4,284,290
+  s_4f451d265ed3e6::t_74e6b862c1f55c 20,33-34,39-40,42-43,279-280
+backend/src/main/resources/schema.sql
+  s_4f451d265ed3e6::t_afe702b4c8378d 104,106-107
+  s_4f451d265ed3e6::t_8e2574ac346570 105
+backend/src/main/java/com/costsharing/calculator/formula/CalculatorConfigValidator.java
+  s_4f451d265ed3e6::t_7a1df193c3594f 65,90
+  s_4f451d265ed3e6::t_707d3d662b8bdc 1-64,66-87,91-100
+  s_4f451d265ed3e6::t_74e6b862c1f55c 88-89
+tests/calculator-regressions.test.mjs
+  s_4f451d265ed3e6::t_cc8b4eb3b68c43 93-104
+  s_4f451d265ed3e6::t_0eb8d857a5e8be 1-92,105-162
+backend/src/test/java/com/costsharing/calculator/service/BillMigrationRunnerTest.java
+  s_4f451d265ed3e6::t_8e2574ac346570 118-125,127-133
+  s_4f451d265ed3e6::t_0bf24ea5a704c5 126
+  s_4f451d265ed3e6::t_196a337175d783 1-117,134
+backend/src/main/java/com/costsharing/calculator/formula/StepConfig.java
+  s_4f451d265ed3e6::t_bd7a841f6ac8d6 25
+README.md
+  s_4f451d265ed3e6::t_59dd0b2fe0e795 14-17,19-25
+  s_4f451d265ed3e6::t_02fe0b887af2cb 18
+src/pages/home/home.vue
+  s_4f451d265ed3e6::t_cde13e403bfbd2 154-155,164-165,169,173-178,186-187
+package.json
+  s_4f451d265ed3e6::t_0eb8d857a5e8be 7
+backend/src/main/java/com/costsharing/calculator/entity/BillMigration.java
+  s_4f451d265ed3e6::t_afe702b4c8378d 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "c0bd739b07aca6a9bfb92eba1655486b62faa0cd",
+  "prompts": {},
+  "sessions": {
+    "s_04019c3a011b2f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4ced687-d49b-4546-9881-84f5b4130695",
+        "model": "grok-4.7"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    },
+    "s_4f451d265ed3e6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c9df-d0cc-7cb2-9410-88ae59a3b91f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
