@@ -106,28 +106,6 @@ public final class DefaultConfigs {
         return share;
     }
 
-    /** 修复上一版本迁移生成的房主 /2 规则，保留人员资料及其余人员的分摊比例。 */
-    public static boolean upgradeLegacyLiziOwnerRule(CalculatorConfig config) {
-        if (config == null || config.getRules() == null) return false;
-        boolean changed = false;
-        for (RuleConfig rule : config.getRules()) {
-            if (rule == null || rule.getSteps() == null) continue;
-            for (StepConfig step : rule.getSteps()) {
-                if (step == null || !"share".equals(step.getType()) || !"total".equals(step.getSource())
-                        || !Boolean.TRUE.equals(step.getPartial()) || step.getShares() == null || step.getShares().size() != 1) continue;
-                ShareConfig share = step.getShares().get(0);
-                if (share != null && "owner".equals(share.getMember())
-                        && CalculatorConfigValidator.STAY_DAYS.equals(share.getBasis())
-                        && share.getWeight() != null && share.getWeight().compareTo(new BigDecimal("0.5")) == 0) {
-                    share.setBasis(CalculatorConfigValidator.STAY_DAYS_PER_MEMBER);
-                    share.setWeight(BigDecimal.ONE);
-                    changed = true;
-                }
-            }
-        }
-        return changed;
-    }
-
     private static StepConfig share(String source, boolean partial, List<ShareConfig> shares) {
         StepConfig step = new StepConfig();
         step.setType("share");

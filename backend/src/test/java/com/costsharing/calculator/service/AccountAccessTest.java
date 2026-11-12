@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.datasource.url=jdbc:h2:mem:accountaccess;MODE=MySQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=year,month",
         "spring.datasource.driver-class-name=org.h2.Driver", "spring.datasource.username=sa", "spring.datasource.password=",
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect", "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
-        "spring.jpa.hibernate.ddl-auto=create-drop", "spring.sql.init.mode=never", "LEGACY_OWNER_OPENID=historical-owner",
+        "spring.jpa.hibernate.ddl-auto=create-drop", "spring.sql.init.mode=never",
         "logging.level.org.hibernate.SQL=WARN", "spring.jpa.show-sql=false"
 })
 @AutoConfigureMockMvc @Transactional
@@ -63,10 +63,6 @@ class AccountAccessTest {
         mvc.perform(get("/calculators")).andExpect(status().isUnauthorized());
         mvc.perform(get("/calculators").header("X-WX-OPENID","openid-owner")).andExpect(status().isUnauthorized());
         mvc.perform(get("/calculators").header("Authorization","Bearer forged")).andExpect(status().isUnauthorized());
-        for (String path : new String[]{"/cards","/lizi-bills","/gezi-bills"}) {
-            mvc.perform(get(path).header("Authorization",owner)).andExpect(status().isGone());
-            mvc.perform(post(path).header("Authorization",owner).contentType("application/json").content("{}")).andExpect(status().isGone());
-        }
     }
     @Test void unrelatedAccountsCannotListReadWriteOrDeleteOthersCalculatorsAndBills() throws Exception {
         mvc.perform(get("/calculators").header("Authorization",stranger)).andExpect(jsonPath("$.data.length()").value(0));
@@ -122,7 +118,6 @@ class AccountAccessTest {
     }
     @Test void sessionsExpireAndLogoutRevokesTokenAndNeverExposeOpenidToCompanions() throws Exception {
         mvc.perform(get("/auth/me").header("Authorization",owner)).andExpect(jsonPath("$.data.openid").doesNotExist());
-        mvc.perform(get("/auth/identity").header("Authorization",owner)).andExpect(jsonPath("$.data.openid").value("openid-"+ownerCode));
         var session=sessions.findById(Tokens.hash(owner.substring(7))).orElseThrow(); session.setExpiresAt(Instant.now().minusSeconds(1)); sessions.saveAndFlush(session);
         mvc.perform(get("/calculators").header("Authorization",owner)).andExpect(status().isUnauthorized());
         mvc.perform(delete("/auth/session").header("Authorization",member)).andExpect(status().isOk());
@@ -143,18 +138,5 @@ class AccountAccessTest {
             assertEquals(java.util.List.of(200,410),statuses);
             mvc.perform(get("/calculators/"+calculatorId+"/companions").header("Authorization",owner)).andExpect(jsonPath("$.data.people.length()").value(2));
         } finally { pool.shutdownNow(); }
-    }
-    @Test void onlyConfiguredOpenidClaimsUnownedHistoricalData() throws Exception {
-        long unowned=calculators.findAll().stream().filter(c -> c.getOwnerId()==null).count();
-        assertTrue(unowned>=2);
-        mvc.perform(put("/auth/me").header("Authorization",stranger).contentType("application/json").content("{\"displayName\":\"很小一颗李子\"}")).andExpect(status().isOk());
-        mvc.perform(get("/calculators").header("Authorization",stranger)).andExpect(jsonPath("$.data.length()").value(0));
-        when(wechat.exchange("real-owner")).thenReturn("historical-owner");
-        String legacyOwner=login("real-owner");
-        mvc.perform(get("/calculators").header("Authorization",legacyOwner)).andExpect(jsonPath("$.data.length()").value((int)unowned));
-        assertTrue(calculators.findAll().stream().noneMatch(c -> c.getOwnerId()==null));
-        // 已有其他账号创建的计算器不会被迁走。
-        mvc.perform(get("/calculators/"+calculatorId).header("Authorization",owner)).andExpect(status().isOk());
-        mvc.perform(get("/calculators/"+calculatorId).header("Authorization",legacyOwner)).andExpect(status().isNotFound());
     }
 }

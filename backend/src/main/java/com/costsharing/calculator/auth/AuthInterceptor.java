@@ -13,8 +13,6 @@ public class AuthInterceptor implements HandlerInterceptor {
         String header = request.getHeader("Authorization");
         var account = auth.authenticate(header != null && header.startsWith("Bearer ") ? header.substring(7) : null);
         request.setAttribute(CurrentAccount.ATTRIBUTE, account);
-        // 旧的共用数据接口不再对外提供，避免绕过计算器权限。
-        if (path.matches("/(cards|lizi-bills|gezi-bills)(/.*)?")) throw new AccessException(410, "旧版接口已停用，请使用通用计算器");
         return true;
     }
 }

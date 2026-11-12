@@ -11,7 +11,6 @@ public class AuthService {
     private final WechatIdentity identity;
     private final AccountRepository accounts;
     private final LoginSessionRepository sessions;
-    private final LegacyOwnership ownership;
     private final AccountRegistration registration;
     public record LoginResult(String token, Account account) {}
     @Transactional
@@ -22,7 +21,6 @@ public class AuthService {
         catch (org.springframework.dao.DataIntegrityViolationException race) {
             account=accounts.findByOpenidHash(Tokens.hash(openid)).orElseThrow(() -> race);
         }
-        ownership.assign(account);
         sessions.deleteByExpiresAtBefore(Instant.now());
         String token = Tokens.create();
         var session = new LoginSession(); session.setTokenHash(Tokens.hash(token));

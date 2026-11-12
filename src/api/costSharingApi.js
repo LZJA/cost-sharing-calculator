@@ -84,7 +84,6 @@ export default {
   auth: {
     me: () => request('/auth/me'),
     rename: (displayName) => request('/auth/me', 'PUT', { displayName }),
-    identity: () => request('/auth/identity'),
     logout: async () => { await request('/auth/session', 'DELETE'); uni.removeStorageSync(TOKEN_KEY) }
   },
   calculator: {
@@ -107,9 +106,5 @@ export default {
     save: (data) => request('/bills', 'POST', data),
     getPage: (params = {}) => request('/bills', 'GET', params),
     delete: (id) => request(`/bills/${id}`, 'DELETE')
-  },
-  // 老页面仅作跳转兼容；服务端已停用这些共用数据接口。
-  card: { getAll: () => request('/cards'), getByType: (type) => request(`/cards/${type}`), save: (data) => request('/cards', 'POST', data) },
-  liziBill: { save: (data) => request('/lizi-bills', 'POST', data), getPage: (data) => request('/lizi-bills', 'GET', data), delete: (id) => request(`/lizi-bills/${id}`, 'DELETE') },
-  geziBill: { save: (data) => request('/gezi-bills', 'POST', data), getPage: (data) => request('/gezi-bills', 'GET', data), delete: (id) => request(`/gezi-bills/${id}`, 'DELETE') }
+  }
 }

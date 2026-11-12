@@ -16,9 +16,6 @@ public class AuthController {
         return ApiResponse.success(auth.login(request.code()));
     }
     @GetMapping("/me") public ApiResponse<Account> me() { return ApiResponse.success(CurrentAccount.account()); }
-    @GetMapping("/identity") public ApiResponse<java.util.Map<String,String>> identity() {
-        return ApiResponse.success(java.util.Map.of("openid", CurrentAccount.account().getOpenid()));
-    }
     @PutMapping("/me") public ApiResponse<Account> rename(@Valid @RequestBody ProfileRequest request) {
         return ApiResponse.success(auth.rename(request.displayName()));
     }
