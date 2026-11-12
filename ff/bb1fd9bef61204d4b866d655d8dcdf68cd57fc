@@ -1,0 +1,25 @@
+tests/auth.test.mjs
+  s_04019c3a011b2f::t_320525b024ba2b 68,72,74
+src/api/costSharingApi.js
+  s_04019c3a011b2f::t_79fda3380bb517 2
+  s_04019c3a011b2f::t_67f1327ae4bbb8 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "ffbb1fd9bef61204d4b866d655d8dcdf68cd57fc",
+  "prompts": {},
+  "sessions": {
+    "s_04019c3a011b2f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4ced687-d49b-4546-9881-84f5b4130695",
+        "model": "grok-4.7"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
