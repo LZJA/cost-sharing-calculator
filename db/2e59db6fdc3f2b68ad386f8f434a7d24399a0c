@@ -1,0 +1,218 @@
+backend/src/main/java/com/costsharing/calculator/entity/Calculator.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 43-46
+backend/src/main/java/com/costsharing/calculator/entity/Bill.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 34-37
+src/utils/ruleEditor.js
+  s_4f451d265ed3e6::t_03366016c1ac8b 1-10,19-24,35-75,97,128
+  s_4f451d265ed3e6::t_3be64b6d3bc105 11-16,18
+  s_4f451d265ed3e6::t_4334c79d802cf1 17
+  s_4f451d265ed3e6::t_7d400866b60f0f 25-34
+  s_4f451d265ed3e6::t_a1fcc3cf641ca8 76-96,98-127
+backend/src/main/java/com/costsharing/calculator/formula/StepConfig.java
+  s_4f451d265ed3e6::t_03366016c1ac8b 20-22
+  s_4f451d265ed3e6::t_c8a32dffdf0736 25-27
+backend/AUTH_SETUP.md
+  s_4f451d265ed3e6::t_c9853e06e41e8b 1-26,28-51
+  s_04019c3a011b2f::t_b967d23729514f 27
+src/pages/companions/index.vue
+  s_04019c3a011b2f::t_f35b0904ed9ad7 79-83
+  s_04019c3a011b2f::t_61f42f3c865cd3 8-14
+  s_04019c3a011b2f::t_c4feb0bc65833a 1-7,15-78,84-88
+backend/src/main/java/com/costsharing/calculator/controller/BillController.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 41-42,45
+backend/src/main/java/com/costsharing/calculator/auth/AccessException.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-8
+src/components/CustomHeader/CustomHeader.vue
+  s_4f451d265ed3e6::t_01813764efd251 8,22-23,38-39,42,46-61,84,113,125-128,135-140
+  s_4f451d265ed3e6::t_a2b6a42c229e4d 14
+  s_04019c3a011b2f::t_10c6522e9c0d23 141
+backend/src/main/java/com/costsharing/calculator/auth/AuthController.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-18,22-28
+  s_4f451d265ed3e6::t_a2b6a42c229e4d 19-21
+backend/src/main/java/com/costsharing/calculator/auth/Invitation.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-14
+backend/src/main/java/com/costsharing/calculator/formula/FormulaEngine.java
+  s_4f451d265ed3e6::t_c8a32dffdf0736 50-51,89
+src/pages/home/home.vue
+  s_4f451d265ed3e6::t_a2b6a42c229e4d 16,18,46,48,103-105,952-955
+  s_4f451d265ed3e6::t_c9853e06e41e8b 234,236-237,240-241,243-244,246
+  s_04019c3a011b2f::t_d39924fd49d49a 17
+backend/src/main/java/com/costsharing/calculator/auth/AccountRepository.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-4,6
+backend/src/test/java/com/costsharing/calculator/formula/GroupedFeesTest.java
+  s_4f451d265ed3e6::t_134ee63d636817 1-75,78-119
+  s_4f451d265ed3e6::t_88b8326b40110f 76-77
+backend/src/test/java/com/costsharing/calculator/formula/GenericFeesTest.java
+  s_4f451d265ed3e6::t_4334c79d802cf1 10-37
+README.md
+  s_4f451d265ed3e6::t_c9853e06e41e8b 23,43-48
+  s_4f451d265ed3e6::t_b097c108aba235 16-19,21-22,24
+  s_4f451d265ed3e6::t_3e3d3ecba698af 20,42
+  s_04019c3a011b2f::t_fb00e0eb8b7f7d 49
+backend/src/main/java/com/costsharing/calculator/auth/CurrentAccount.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-15
+backend/src/main/java/com/costsharing/calculator/auth/LoginSession.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-10
+src/pages/calculator/edit.vue
+  s_4f451d265ed3e6::t_3367f6e2c0fcc2 473-481,484,503
+  s_04019c3a011b2f::t_f80a073c9a6b9b 1067-1069
+  s_4f451d265ed3e6::t_f2a07018fe8ce0 294,320,324,328,330,339,409-447,449-454,464,570-571,576-577,581,654-659,750,753,1138-1141,1144-1147
+  s_04019c3a011b2f::t_827976322567bb 252,888-891,895-898
+  s_4f451d265ed3e6::t_ba1b2c4167b4b8 101-103,105-106,108-109
+  s_4f451d265ed3e6::t_7fcf2cfdcd989a 77-78,89-90,92,110-139,148,152-154,157-161,163-171,174,182-193,195,197-218,220-235,237-241,248-249,380,392,398
+  s_4f451d265ed3e6::t_a2b6a42c229e4d 104,269,281,1121,1133,1142-1143,1148-1149
+  s_04019c3a011b2f::t_6a68ee9d52fea6 155,178,219
+  s_4f451d265ed3e6::t_3be64b6d3bc105 534,546,612,620,624-625,670,1014-1066,1070-1111
+  s_4f451d265ed3e6::t_8de557806b5b66 5-9,11-13,27-30,48-52,54,71-73,76,79-85,91,95-96,100,140-146,175-177,179-181,194,196,243,246,278-280,282,284
+  s_4f451d265ed3e6::t_771a22415c2ca4 19,236,271,684,688-691
+  s_4f451d265ed3e6::t_a828df197780fc 521-533,535-545,547-569,572-575,578-580,582-583,586-611,613-615,617-619,621-623,626-645,648,660-665,668,673-674,679-680,746,748-749,751,816-817
+  s_4f451d265ed3e6::t_a35306071b055f 1112-1120,1122-1132,1134-1135
+  s_4f451d265ed3e6::t_fb2b4fb378d986 1136-1137
+  s_4f451d265ed3e6::t_596964cf9ae714 337,408,677-678
+  s_4f451d265ed3e6::t_b13c1ddd7b278a 616
+  s_04019c3a011b2f::t_d768d30028748f 93
+  s_4f451d265ed3e6::t_b237fda9b6228b 307,310-319,321-323,325-327,329,331-336,338,340-379,482-483,491,498,501-502,728-733,736-740
+  s_4f451d265ed3e6::t_4f1f2f3fbd7b5c 277,308-309,448,697,747,752,759,762-763,766-767,785-786
+  s_04019c3a011b2f::t_3b6c0af2b07ea8 53
+  s_04019c3a011b2f::t_743d4f250242b0 245
+  s_04019c3a011b2f::t_7412aa597d5639 813-815
+backend/src/test/java/com/costsharing/calculator/service/GenericBillPersistenceTest.java
+  s_4f451d265ed3e6::t_88b8326b40110f 117,119-123,125,130-134,139-141,143-145
+  s_4f451d265ed3e6::t_4334c79d802cf1 54,65
+backend/src/main/java/com/costsharing/calculator/formula/StepSources.java
+  s_4f451d265ed3e6::t_c8a32dffdf0736 1-28
+backend/src/main/java/com/costsharing/calculator/auth/AuthInterceptor.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-20
+backend/src/main/java/com/costsharing/calculator/auth/ApiErrors.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-11
+backend/src/main/java/com/costsharing/calculator/auth/CompanionRepository.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-9
+backend/src/main/java/com/costsharing/calculator/auth/InvitationRepository.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-13,15-16
+  s_04019c3a011b2f::t_bfbc555cb0a052 14
+backend/src/main/java/com/costsharing/calculator/auth/LoginSessionRepository.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-6
+src/utils/navigation.js
+  s_4f451d265ed3e6::t_01813764efd251 1-9
+backend/src/main/java/com/costsharing/calculator/auth/WechatIdentity.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-2,5-15,19-27,29-30,33-42
+  s_04019c3a011b2f::t_95c7a03bac29af 3-4,16-18,28,31-32
+backend/src/main/java/com/costsharing/calculator/service/BillService.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 3,59-60,82,85-86,91-93
+backend/src/main/java/com/costsharing/calculator/config/WebConfig.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 3-5,14,17-20,27
+src/pages/billList/index.vue
+  s_4f451d265ed3e6::t_a2b6a42c229e4d 38
+  s_4f451d265ed3e6::t_c9853e06e41e8b 422
+  s_04019c3a011b2f::t_8c2f8dcc9ee5a3 69,168,187,413,421,480-485
+tests/sharing.test.mjs
+  s_4f451d265ed3e6::t_d9bb2202273ee6 1-73
+backend/src/main/java/com/costsharing/calculator/auth/AuthService.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1,3-7,9-14,16,18-19,25-31,33-37,40-42,44-45
+  s_04019c3a011b2f::t_4ba0713f6ff4bb 20-22
+src/pages/calculator/index.vue
+  s_04019c3a011b2f::t_70da67ac8bbbaa 17,23
+  s_4f451d265ed3e6::t_22785c29964072 49
+  s_4f451d265ed3e6::t_8056a0378487f6 13,42,57,68,70,93,107-108,110-112,118,123-124,148-149,156,164-165,167-174,178,184-203,205-206,244
+  s_4f451d265ed3e6::t_99cf3abfd878b5 332-337
+  s_4f451d265ed3e6::t_c9853e06e41e8b 80,218-222,224,226-229,231-234
+  s_04019c3a011b2f::t_41f21085bad48f 269-272,280-281
+  s_04019c3a011b2f::t_0a68f5b78e16c0 44
+  s_4f451d265ed3e6::t_a2b6a42c229e4d 3-8,10,139,338-343
+  s_04019c3a011b2f::t_09c54793463ca9 140
+backend/src/main/java/com/costsharing/calculator/repository/CalculatorRepository.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 4-6,14-16,18
+  s_04019c3a011b2f::t_ea2a3b9bfd99d8 17,19-23
+backend/src/main/java/com/costsharing/calculator/auth/Companion.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-11
+tests/auth.test.mjs
+  s_4f451d265ed3e6::t_0cfe7c3e17bbf7 1-4,6-9,11-17,19-24,26-75,100
+  s_4f451d265ed3e6::t_4ec37012f19a10 10,18,25,85-99
+  s_04019c3a011b2f::t_21a1e92f07225d 5,76-84
+src/api/costSharingApi.js
+  s_4f451d265ed3e6::t_a2b6a42c229e4d 1-13,15-25,27-28,30-35,37-40,42-49,51-56,58-69,71-72,74-79,81,86-90,99-106,113-116
+  s_04019c3a011b2f::t_a325192202f4ab 70,73
+backend/src/main/java/com/costsharing/calculator/formula/CalculatorConfigValidator.java
+  s_4f451d265ed3e6::t_3e3d3ecba698af 72,75,77-81
+  s_4f451d265ed3e6::t_c8a32dffdf0736 68-71,73-74,76,82-83,88,91-92
+  s_4f451d265ed3e6::t_03366016c1ac8b 57,90,93-94,99
+backend/src/main/java/com/costsharing/calculator/auth/Tokens.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1-18
+src/subpackages/statistics/index.vue
+  s_04019c3a011b2f::t_0a8af77f88f204 24
+tests/calculator-regressions.test.mjs
+  s_4f451d265ed3e6::t_b097c108aba235 14-16,125-141
+  s_4f451d265ed3e6::t_f7417b72519cb5 33-34,306,309-319,321-322,325-329,332,336,339,342,347,353-354,359-384
+  s_4f451d265ed3e6::t_aea8fde369b33f 217-261
+  s_4f451d265ed3e6::t_2c4e71493bc943 40-44,110-124,142-216
+  s_4f451d265ed3e6::t_545e97106cce4a 45-109
+  s_4f451d265ed3e6::t_771a22415c2ca4 400
+  s_4f451d265ed3e6::t_8f11f5b6d4f304 11-13,17,24
+backend/src/main/java/com/costsharing/calculator/auth/CompanionService.java
+  s_4f451d265ed3e6::t_c9853e06e41e8b 1-52,56-91
+  s_04019c3a011b2f::t_8416a561db7c72 53-55
+start-backend.sh
+  s_4f451d265ed3e6::t_4ec37012f19a10 21
+  s_04019c3a011b2f::t_9d73d782907eac 2,4,6-7,10-15,19-20,22,24-45,51-52
+backend/src/main/java/com/costsharing/calculator/service/CalculatorService.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 3-4,25-27,29,33-50,57-58,67,75,80-81
+backend/src/main/java/com/costsharing/calculator/auth/Account.java
+  s_4f451d265ed3e6::t_c2547171ca9d04 1,3-8,12-13
+backend/src/main/java/com/costsharing/calculator/auth/LegacyOwnership.java
+  s_4f451d265ed3e6::t_c9853e06e41e8b 13-15,18,20
+  s_4f451d265ed3e6::t_c2547171ca9d04 1,3-6,8-12,16,24-26,28
+backend/.env.example
+  s_04019c3a011b2f::t_ebfde5848965b6 1-6
+backend/docker-compose.yml
+  s_04019c3a011b2f::t_deb7ca1150d635 52-55
+backend/src/main/java/com/costsharing/calculator/auth/AccountRegistration.java
+  s_04019c3a011b2f::t_31ceb11ab76aba 1-16
+backend/src/main/java/com/costsharing/calculator/auth/CompanionController.java
+  s_04019c3a011b2f::t_5efc4edc7b1358 1-15
+backend/src/test/java/com/costsharing/calculator/service/AccountAccessTest.java
+  s_04019c3a011b2f::t_97a774c4657afb 1-160
+backend/src/test/java/com/costsharing/calculator/service/BillServiceTest.java
+  s_04019c3a011b2f::t_f65f368eca4c12 10-14,23-28
+src/App.vue
+  s_04019c3a011b2f::t_71e27d94b53085 2,5
+src/manifest.json
+  s_04019c3a011b2f::t_2065275c99e1dc 29
+src/pages.json
+  s_04019c3a011b2f::t_8baede2d8ebae3 55-76
+src/pages/account/index.vue
+  s_04019c3a011b2f::t_06291cff274e23 1-49
+src/pages/invitation/index.vue
+  s_04019c3a011b2f::t_7160a9eed00d8d 1-58
+src/styles/sharing.scss
+  s_04019c3a011b2f::t_388d3f2be4c3fd 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "db2e59db6fdc3f2b68ad386f8f434a7d24399a0c",
+  "prompts": {},
+  "sessions": {
+    "s_04019c3a011b2f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4ced687-d49b-4546-9881-84f5b4130695",
+        "model": "unknown"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    },
+    "s_4f451d265ed3e6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c9df-d0cc-7cb2-9410-88ae59a3b91f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
