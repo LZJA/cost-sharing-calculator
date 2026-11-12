@@ -833,14 +833,14 @@ onLoad(async (options) => {
 .container {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 24rpx 24rpx 80rpx;
+  padding: 24rpx 12rpx 80rpx;
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #ffecd2 100%);
 }
 .form-container {
   background: rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(10px);
   border-radius: 30rpx;
-  padding: 40rpx;
+  padding: 24rpx;
 }
 .form-group {
   margin-bottom: 32rpx;
@@ -1064,7 +1064,7 @@ onLoad(async (options) => {
   font-weight: 700;
   line-height: 1.5;
 }
-.picker-arrow { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 32rpx; height: 32rpx; color: #8ba1af; font-size: 24rpx; line-height: 1; }
+.picker-arrow { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 40rpx; height: 40rpx; color: #8ba1af; font-size: 32rpx; line-height: 1; }
 .optional-toggle { display: inline-flex; align-items: center; }
 .step-title .picker-arrow { margin-left: 8rpx; vertical-align: middle; }
 .choice-grid { display: flex; gap: 12rpx; }

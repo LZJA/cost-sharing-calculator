@@ -672,9 +672,9 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32rpx;
-  height: 32rpx;
-  font-size: 24rpx;
+  width: 40rpx;
+  height: 40rpx;
+  font-size: 32rpx;
   line-height: 1;
   color: #6b8aa6;
 }

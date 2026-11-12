@@ -13,7 +13,7 @@
       </view> -->
     </view>
 
-    <view class="account-bar"><text>我的与同伴共享的计算器</text><text class="account-link" @tap="openAccount">我的账号</text></view>
+    <view class="account-bar"><text>我的与同伴共享的计算器</text><view class="account-link" @tap="openAccount"><text class="account-link-text">我的账号</text><text class="iconfont icon-a-icon-right account-arrow"></text></view></view>
     <view v-if="loadError" class="account-error" @tap="loadCardData">{{ loadError }} · 点击重试</view>
     <view v-else-if="loaded && !calculators.length" class="empty-calculators">还没有计算器，创建一个或从同伴的邀请卡片加入。</view>
     <!-- 卡片列表 -->
@@ -960,7 +960,9 @@ defineExpose({
   );
 }
 .account-bar { display: flex; justify-content: space-between; align-items: center; gap: 16rpx; padding: 0 32rpx 28rpx; font-size: 25rpx; color: #6c8795; }
-.account-link { color: #3b7379; padding: 12rpx 0 12rpx 16rpx; }
+.account-link { display: flex; align-items: center; justify-content: center; gap: 2rpx; flex-shrink: 0; height: 52rpx; color: #3b7379; background: rgba(255, 255, 255, 0.72); border: 1rpx solid rgba(59, 115, 121, 0.28); border-radius: 999rpx; padding: 0 14rpx 0 22rpx; }
+.account-link-text { font-size: 25rpx; line-height: 1; }
+.account-arrow { display: flex; align-items: center; justify-content: center; width: 32rpx; height: 32rpx; font-size: 30rpx; line-height: 1; transform: translateY(-3rpx); }
 .empty-calculators, .account-error { margin: 0 32rpx 28rpx; padding: 28rpx; border-radius: 20rpx; background: rgba(255,255,255,.65); color: #64818d; line-height: 1.7; font-size: 27rpx; }
 .role-label { display: block; font-size: 22rpx; color: #597d82; margin-top: 14rpx; }
 </style>

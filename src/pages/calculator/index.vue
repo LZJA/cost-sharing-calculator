@@ -278,7 +278,7 @@ onShow(() => { refreshCalculator(); });
   font-size: 30rpx;
 }
 .picker-label { flex: 1; min-width: 0; line-height: 46rpx; }
-.picker-arrow { display: flex; align-items: center; justify-content: center; flex: 0 0 32rpx; width: 32rpx; height: 32rpx; color: #8ba1af; font-size: 24rpx; line-height: 1; }
+.picker-arrow { display: flex; align-items: center; justify-content: center; flex: 0 0 40rpx; width: 40rpx; height: 40rpx; color: #8ba1af; font-size: 32rpx; line-height: 1; }
 .input {
   height: 88rpx;
   line-height: 88rpx;
