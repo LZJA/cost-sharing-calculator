@@ -309,8 +309,8 @@ import {
   generateBarChartData,
   generatePieChartData,
   generateComboChartData,
-} from "@/utils/statisticsHelper.js";
-import { formatAmount } from "@/utils/helpers.js";
+  formatAmount,
+} from "./utils/statisticsHelper.js";
 import api from "@/api/costSharingApi.js";
 import dayjs from "dayjs";
 

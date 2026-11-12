@@ -286,7 +286,7 @@ test("费用改名同步更新规则选项，已引用的费用不能误删", ()
 });
 
 test("费用统计和图表按自定义费用生成，兼容改名、删项及旧账", () => {
-  const source = readFileSync(new URL("../src/utils/statisticsHelper.js", import.meta.url), "utf8")
+  const source = readFileSync(new URL("../src/subpackages/statistics/utils/statisticsHelper.js", import.meta.url), "utf8")
     .replace(/^import\s[\s\S]*?from\s+["'][^"']+["'];?\s*/gm, "").replace(/^export /gm, "");
   const stats = new Function("dayjs", "api", "getBillFees", `${source}\nreturn {processBillData, calculateCostDistribution, generateLineChartData, generateBarChartData};`)
     (dayjs, {}, configHelpers.getBillFees);

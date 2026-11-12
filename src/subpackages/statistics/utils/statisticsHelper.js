@@ -331,3 +331,15 @@ export function generateComboChartData(processedData, avgAmount) {
     ],
   };
 }
+
+/**
+ * 格式化金额
+ * @param {Number} amount - 金额
+ * @param {Number} decimals - 小数位数
+ * @returns {String} 格式化后的金额字符串
+ */
+export function formatAmount(amount, decimals = 2) {
+  const numAmount = parseFloat(amount);
+  if (isNaN(numAmount)) return "0.00";
+  return numAmount.toFixed(decimals);
+}
