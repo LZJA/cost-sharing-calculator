@@ -1,0 +1,30 @@
+src/utils/config.js
+  s_048887dd67bc5f::t_7482b375166b75 17
+backend/src/test/java/com/costsharing/calculator/service/AccountAccessTest.java
+  s_048887dd67bc5f::t_6f60ac3eefaf29 25
+README.md
+  s_048887dd67bc5f::t_17a69e09876dcf 47
+src/api/costSharingApi.js
+  s_048887dd67bc5f::t_c0a87a8a34f050 109
+backend/AUTH_SETUP.md
+  s_048887dd67bc5f::t_e8ad3cb19297f3 1,3,9,26,39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "edecd2da29046dd74d469ca5b0ef9fc09d43e242",
+  "prompts": {},
+  "sessions": {
+    "s_048887dd67bc5f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "143d26a7-323f-4065-b186-2b63bf9b5358",
+        "model": "grok-4.7"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
