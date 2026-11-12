@@ -1,0 +1,39 @@
+src/subpackages/statistics/utils/statisticsHelper.js
+  s_048887dd67bc5f::t_766d87438c6dcb 33-35,37-46,48-88,92-94,96-103,106-122,125-126,128-129,132-133,139-143,145-153,155-156,158-159,161-164,168-170,172-175,177,179-185,189-194,198-200,202-207,209-219,223-224,226-229,231-233,236-239,244-246,248-282,284-285,287-288,293-295,297-304,308-311,313-332
+  s_048887dd67bc5f::t_913cbe3dfe64b5 334-345
+  s_048887dd67bc5f::t_2f0f627b365082 1-32,36,47,89-91,95,104-105,123-124,127,130-131,134-138,144,154,157,160,165-167,171,176,178,186-188,195-197,201,208,220-222,225,230,234-235,240-243,247,283,286,289-292,296,305-307,312,333
+tests/calculator-regressions.test.mjs
+  s_957dc284a01d52::t_1c673ecadde705 289
+src/subpackages/statistics/index.vue
+  s_957dc284a01d52::t_f7747307630ba2 312-313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "e82006947be4a6ff1429ca8f37440ba7d16b0704",
+  "prompts": {},
+  "sessions": {
+    "s_048887dd67bc5f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "143d26a7-323f-4065-b186-2b63bf9b5358",
+        "model": "grok-4.7"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    },
+    "s_957dc284a01d52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0d086d25-311f-4de2-bbe6-561695cee943",
+        "model": "grok-4.7"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
