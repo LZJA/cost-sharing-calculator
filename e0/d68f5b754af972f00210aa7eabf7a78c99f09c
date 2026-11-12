@@ -1,0 +1,32 @@
+src/pages/home/home.vue
+  s_048887dd67bc5f::t_c107f5a10991de 963,965
+  s_048887dd67bc5f::t_24f99ca7ea6633 16
+  s_048887dd67bc5f::t_3ec7cd75a1c9d1 964
+src/pages/calculator/edit.vue
+  s_048887dd67bc5f::t_b6edf9e008fe4e 1067
+  s_048887dd67bc5f::t_8884329a7933ab 843
+  s_048887dd67bc5f::t_557d04cfe8ee9c 836
+src/subpackages/statistics/index.vue
+  s_048887dd67bc5f::t_4872f68bddb781 675-677
+src/pages/calculator/index.vue
+  s_048887dd67bc5f::t_fb3eff67245a39 281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "e0d68f5b754af972f00210aa7eabf7a78c99f09c",
+  "prompts": {},
+  "sessions": {
+    "s_048887dd67bc5f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "143d26a7-323f-4065-b186-2b63bf9b5358",
+        "model": "grok-4.7"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
