@@ -1,0 +1,25 @@
+src/pages/home/home.vue
+  s_04019c3a011b2f::t_cf54da400f9c93 97,172,181,242-249
+  s_04019c3a011b2f::t_67a706e403beca 182-183
+src/pages/billList/index.vue
+  s_04019c3a011b2f::t_a91391a6afbcad 501-504
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "30eae491080ea92cdfc8ca8a08f640731db7b4d6",
+  "prompts": {},
+  "sessions": {
+    "s_04019c3a011b2f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4ced687-d49b-4546-9881-84f5b4130695",
+        "model": "grok-4.7"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
