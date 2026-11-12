@@ -498,7 +498,10 @@ onMounted(() => {
   const options = currentPage.options || {};
 
   calculatorId.value = options.calculatorId || "";
-  pageTitle.value = options.name ? `${options.name}账单` : "账单列表";
+  const calculatorName = options.name || "";
+  let decodedName = calculatorName;
+  try { decodedName = decodeURIComponent(calculatorName); } catch {}
+  pageTitle.value = decodedName ? `${decodedName}账单` : "账单列表";
 
   // 初始化年份选项
   initYearOptions();

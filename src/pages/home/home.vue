@@ -94,6 +94,7 @@ import api from "@/api/costSharingApi.js";
 import {
   uploadImageWithCompress,
   deleteFromCloud,
+  getTempFileURL,
 } from "@/utils/uploadImage.js";
 // 状态栏高度
 const statusBarHeight = ref(0);
@@ -168,7 +169,7 @@ const setCardBackground = async (tempFilePath, calculatorId) => {
       quality: 60,
       needCompress: true,
     });
-    const oldBackground = card.background;
+    const oldBackground = card.storedBackground || card.background;
     await api.calculator.update(card.id, {
       name: card.name,
       description: card.description,
@@ -177,7 +178,9 @@ const setCardBackground = async (tempFilePath, calculatorId) => {
       enableBackground: true,
       config: card.config,
     });
-    card.background = fileID;
+    card.storedBackground = fileID;
+    try { card.background = await getTempFileURL(fileID); }
+    catch (error) { card.background = fileID; console.error("加载背景失败", error); }
     card.enableBackground = true;
     // 新背景保存成功后再清理旧文件，避免保存失败时丢失原背景。
     if (oldBackground?.startsWith("cloud://") && oldBackground !== fileID) {
@@ -236,7 +239,14 @@ const loadCardData = async () => {
   if (cardLoading.value) return;
   cardLoading.value = true;
   try {
-    calculators.value = (await api.calculator.getAll()) || [];
+    const items = (await api.calculator.getAll()) || [];
+    await Promise.all(items.filter((item) => item.background?.startsWith("cloud://")).map(async (item) => {
+      const storedBackground = item.background;
+      try { item.background = await getTempFileURL(storedBackground); }
+      catch (error) { console.error("加载背景失败", error); }
+      item.storedBackground = storedBackground;
+    }));
+    calculators.value = items;
     loadError.value = "";
     loaded.value = true;
   } catch (e) {
