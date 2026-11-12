@@ -40,6 +40,10 @@ public class Calculator {
     @Column(nullable = false)
     private Boolean enableBackground = true;
 
+    private Long ownerId;
+
+    @Transient private String currentRole;
+
     /** 旧数据来源：lizi 或 gezi。新创建的计算器为空。 */
     @Column(length = 10, unique = true)
     private String legacyKey;

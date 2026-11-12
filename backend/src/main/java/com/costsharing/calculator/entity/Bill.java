@@ -31,6 +31,10 @@ public class Bill {
     @Column(name = "calculator_id", nullable = false)
     private Long calculatorId;
 
+    private Long createdBy;
+
+    @Transient private boolean canDelete;
+
     @Column(nullable = false)
     private Integer year;
 

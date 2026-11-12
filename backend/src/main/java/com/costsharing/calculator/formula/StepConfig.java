@@ -17,7 +17,13 @@ public class StepConfig {
 
     private String type;
 
+    /** 编辑器展示方式；金额仍由 partial、basis 和 weight 决定，兼容旧配置省略。 */
+    private String allocationMode;
+
     private String source;
+
+    /** 多选费用，先合计金额再分摊。非 null 时优先于旧 source，空列表无效。 */
+    private List<String> sources;
 
     /**
      * share 专用。为 true 时，这一步只按各份额的绝对比例取费用的一部分

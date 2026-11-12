@@ -5,12 +5,13 @@
     <view
       class="header"
       :class="{ 'header-glass': showGlass, 'header-mb': !showGlass }"
+      :style="{ minHeight: navHeight + 'px', paddingRight: rightInset + 'px' }"
     >
       <view class="header-left" @click="goBack">
         <text class="back-icon">←</text>
       </view>
       <text class="center-title">{{ title }}</text>
-      <view class="header-right">
+      <view v-if="$slots['header-right']" class="header-right">
         <slot name="header-right"></slot>
       </view>
     </view>
@@ -18,7 +19,8 @@
 </template>
 
 <script setup>
-import { defineProps, ref, onMounted } from "vue";
+import { ref, onMounted } from "vue";
+import { navigationLayout } from "@/utils/navigation.js";
 
 const props = defineProps({
   title: {
@@ -33,21 +35,30 @@ const props = defineProps({
 
 // 状态栏高度
 const statusBarHeight = ref(0);
+const navHeight = ref(44);
+const rightInset = ref(104);
 
 const goBack = () => {
-  uni.navigateBack();
+  uni.navigateBack({ fail: () => uni.reLaunch({ url: "/pages/home/home" }) });
 };
 
 onMounted(() => {
-  // 获取系统信息，设置状态栏高度
-  uni.getSystemInfo({
-    success: (res) => {
-      statusBarHeight.value = res.statusBarHeight || 20;
-    },
-    fail: () => {
-      statusBarHeight.value = 20; // 默认值
-    },
-  });
+  const applyLayout = (info) => {
+    let capsule;
+    const hasSystemMenu = typeof wx !== "undefined";
+    try {
+      if (typeof uni.getMenuButtonBoundingClientRect === "function") capsule = uni.getMenuButtonBoundingClientRect();
+      else if (hasSystemMenu && typeof wx.getMenuButtonBoundingClientRect === "function") capsule = wx.getMenuButtonBoundingClientRect();
+    } catch (error) { /* 获取失败时保留系统按钮的预留宽度。 */ }
+    const layout = navigationLayout(info, capsule, hasSystemMenu);
+    statusBarHeight.value = layout.statusBarHeight;
+    navHeight.value = layout.navHeight;
+    rightInset.value = layout.rightInset;
+  };
+  if (typeof uni.getWindowInfo === "function") {
+    try { applyLayout(uni.getWindowInfo()); return; } catch (error) { /* 回退到旧基础库 API。 */ }
+  }
+  uni.getSystemInfo({ success: applyLayout, fail: () => applyLayout({ statusBarHeight: 20, windowWidth: 375 }) });
 });
 </script>
 
@@ -70,7 +81,7 @@ onMounted(() => {
 }
 
 .header-glass {
-  padding: 32rpx 24rpx;
+  padding: 12rpx 16rpx;
   background: rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(10px);
 }
@@ -99,6 +110,7 @@ onMounted(() => {
 
 /* Subpage Mode Styles */
 .header-left {
+  flex: 0 0 80rpx;
   width: 80rpx;
   display: flex;
   align-items: center;
@@ -110,10 +122,21 @@ onMounted(() => {
 }
 
 .center-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 36rpx;
   font-weight: 700;
   color: #5a7c9a;
   text-align: center;
   flex: 1;
+}
+
+.header-right {
+  flex: 0 0 80rpx;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

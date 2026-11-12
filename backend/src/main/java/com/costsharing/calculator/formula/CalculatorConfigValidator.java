@@ -54,6 +54,7 @@ public final class CalculatorConfigValidator {
     private static void validateSteps(CalculatorConfig config, RuleConfig rule, Set<String> keys, Set<String> fees) {
         Set<String> claimed = new HashSet<>();
         Set<String> remainders = new HashSet<>();
+        Set<String> zeroRemainders = new HashSet<>();
         for (StepConfig step : rule.getSteps()) {
             require(step != null && step.getType() != null, "规则步骤缺少类型");
             if ("transfer".equals(step.getType())) {
@@ -64,25 +65,38 @@ public final class CalculatorConfigValidator {
                 continue;
             }
             require("share".equals(step.getType()), "不认识的规则步骤: " + step.getType());
-            String source = step.getSource();
-            require(source != null, "分摊步骤缺少费用来源");
-            boolean remainder = source.startsWith("remainder:");
-            String origin = remainder ? source.substring("remainder:".length()) : source;
-            require("total".equals(origin) || fees.contains(origin), "费用来源不存在或已删除: " + source);
-            if (remainder) {
-                require(remainders.remove(origin), "没有可用的剩余费用，或已分摊过: " + origin);
-            } else {
-                Set<String> sources = "total".equals(origin) ? fees : Set.of(origin);
-                for (String fee : sources) require(claimed.add(fee), "费用重复分摊: " + fee);
+            boolean zeroSource = true;
+            for (String source : StepSources.of(step)) {
+                if (source.startsWith("remainder:")) {
+                    String origin = source.substring("remainder:".length());
+                    require(remainders.remove(origin), "没有可用的剩余费用，或已在其他步骤分配，请检查前后步骤");
+                    zeroSource &= zeroRemainders.remove(origin);
+                } else {
+                    require("total".equals(source) || fees.contains(source), "费用来源不存在或已删除，请重新选择");
+                    Set<String> sources = "total".equals(source) ? fees : Set.of(source);
+                    for (String fee : sources) {
+                        String name = FeeCatalog.definitions(config).stream().filter(item -> fee.equals(item.getKey()))
+                                .findFirst().orElseThrow().getName();
+                        require(claimed.add(fee), "「" + name + "」已在前面的步骤分配，不能重复选择");
+                    }
+                    zeroSource = false;
+                }
             }
             BigDecimal sum = validateShares(config, step.getShares(), keys, true);
             if (Boolean.TRUE.equals(step.getPartial())) {
                 require(sum.compareTo(BigDecimal.valueOf(config.getMembers().size())) <= 0, "只取一部分时，份额合计不能超过 1");
+                String origin = StepSources.origin(step);
                 remainders.add(origin);
+                // 固定百分比已经合计 100% 时，不要求再添加一个分配 0 元的步骤。
+                if (zeroSource || (sum.compareTo(BigDecimal.valueOf(config.getMembers().size())) == 0
+                        && step.getShares().stream().noneMatch(share -> usesStayDays(share.getBasis())))) {
+                    zeroRemainders.add(origin);
+                }
             } else {
                 require(sum.signum() > 0, "完整分摊的份额合计必须大于 0");
             }
         }
+        remainders.removeAll(zeroRemainders);
         require(remainders.isEmpty(), "规则「" + rule.getName() + "」还有剩余费用，请添加分摊剩余费用的步骤");
         require(claimed.containsAll(fees), "规则「" + rule.getName() + "」需分摊总费用，或覆盖全部费用项");
     }

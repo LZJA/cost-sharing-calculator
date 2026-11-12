@@ -7,6 +7,11 @@ import com.costsharing.calculator.entity.Calculator;
 import com.costsharing.calculator.formula.*;
 import com.costsharing.calculator.repository.BillRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import com.costsharing.calculator.auth.*;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +20,12 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class BillServiceTest {
+    @BeforeEach void authenticate() {
+        var request = new MockHttpServletRequest(); var account = new Account(); account.setId(1L);
+        request.setAttribute(CurrentAccount.ATTRIBUTE, account);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    }
+    @AfterEach void clearIdentity() { RequestContextHolder.resetRequestAttributes(); }
     @Test
     void savesCustomFeeSnapshotsAndUsesSameResultAsPreview() {
         var repository = mock(BillRepository.class);

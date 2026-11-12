@@ -47,7 +47,8 @@ public final class FormulaEngine {
     private static void applyShare(StepConfig step, CalculatorConfig config, BillInput input,
                                    Map<String, BigDecimal> fees,
                                    Map<String, BigDecimal> amounts, Map<String, BigDecimal> remainders) {
-        BigDecimal amount = feeOf(step.getSource(), fees, remainders);
+        BigDecimal amount = StepSources.of(step).stream().map(source -> feeOf(source, fees, remainders))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         List<ShareConfig> shares = step.getShares();
         boolean usesDays = shares.stream().anyMatch(share -> CalculatorConfigValidator.usesStayDays(share.getBasis()));
         int memberCount = config.getMembers().size();
@@ -85,8 +86,7 @@ public final class FormulaEngine {
             amounts.put(member, amounts.get(member).add(parts.get(i)));
         }
         if (partial) {
-            String origin = step.getSource().replaceFirst("^remainder:", "");
-            remainders.put(origin, amount.subtract(sum(parts)));
+            remainders.put(StepSources.origin(step), amount.subtract(sum(parts)));
         }
     }
 

@@ -49,6 +49,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cost_sharing_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 123456
+      # 微信身份与历史计算器归属；真实值从部署环境读取
+      WECHAT_APP_ID: ${WECHAT_APP_ID:-}
+      WECHAT_APP_SECRET: ${WECHAT_APP_SECRET:-}
+      LEGACY_OWNER_OPENID: ${LEGACY_OWNER_OPENID:-}
       # JVM 参数
       JAVA_OPTS: -Xmx512m -Xms256m
     ports:

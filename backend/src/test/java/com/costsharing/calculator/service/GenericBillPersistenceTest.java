@@ -8,6 +8,11 @@ import com.costsharing.calculator.repository.BillRepository;
 import com.costsharing.calculator.repository.CalculatorRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import com.costsharing.calculator.auth.*;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -30,6 +35,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ CalculatorService.class, BillService.class })
 class GenericBillPersistenceTest {
+    @BeforeEach void authenticate() {
+        var request = new MockHttpServletRequest();
+        var account = new Account(); account.setId(1L); account.setOpenid("test-owner");
+        request.setAttribute(CurrentAccount.ATTRIBUTE, account);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    }
+    @AfterEach void clearIdentity() { RequestContextHolder.resetRequestAttributes(); }
     @Autowired CalculatorService calculators;
     @Autowired BillService bills;
     @Autowired BillRepository billRepository;
@@ -39,6 +51,7 @@ class GenericBillPersistenceTest {
     @Test
     void customFeesAndDayLabelsRoundTripAndOldBillKeepsItsSnapshot() {
         var config = DefaultConfigs.lizi();
+        config.getRules().get(0).getSteps().get(0).setAllocationMode("days");
         config.setFees(new ArrayList<>(List.of(new FeeConfig("service", "服务费", "💰"), new FeeConfig("net", "网费", "🌐"))));
         config.setDayLabels(Map.of("total", "服务周期天数", "counted", "使用天数"));
         var request = new CalculatorRequest();
@@ -49,6 +62,7 @@ class GenericBillPersistenceTest {
         entityManager.clear();
         var loadedConfig = calculatorRepository.findById(calculator.getId()).orElseThrow().getConfig();
         assertEquals("服务费", loadedConfig.getFees().get(0).getName());
+        assertEquals("days", loadedConfig.getRules().get(0).getSteps().get(0).getAllocationMode());
         assertEquals("使用天数", loadedConfig.getDayLabels().get("counted"));
 
         var billRequest = new BillRequest();
@@ -97,5 +111,37 @@ class GenericBillPersistenceTest {
         assertNull(loaded.getFees());
         assertEquals(new BigDecimal("20.00"), loaded.getElectricBill());
         assertEquals(new BigDecimal("60.00"), loaded.getShares().get(0).getAmount());
+    }
+
+    @Test
+    void groupedFeesAndTheirRemainderSurviveSaveAndReload() {
+        var config = DefaultConfigs.lizi();
+        var first = config.getRules().get(0).getSteps().get(0);
+        first.setSources(List.of("water", "electric", "gas"));
+        first.setSource(null);
+        var remainder = "remainder:" + StepSources.origin(first);
+        config.getRules().get(0).getSteps().get(1).setSource(remainder);
+        var request = new CalculatorRequest();
+        request.setName("合并费用的天数分摊");
+        request.setConfig(config);
+        var calculator = calculators.create(request);
+        entityManager.flush();
+        entityManager.clear();
+        var loaded = calculatorRepository.findById(calculator.getId()).orElseThrow();
+        var storedFirst = loaded.getConfig().getRules().get(0).getSteps().get(0);
+        assertNull(storedFirst.getSource());
+        assertEquals(List.of("water", "electric", "gas"), storedFirst.getSources());
+        assertEquals(remainder, "remainder:" + StepSources.origin(storedFirst));
+        var billRequest = new BillRequest();
+        billRequest.setCalculatorId(calculator.getId());
+        billRequest.setYear(2026);
+        billRequest.setMonth(11);
+        billRequest.setFees(Map.of("water", new BigDecimal("100"), "electric", new BigDecimal("100"), "gas", new BigDecimal("100")));
+        billRequest.setTotalDays(30);
+        billRequest.setDays(15);
+        var bill = bills.calculateAndSave(billRequest);
+        assertEquals(new BigDecimal("50.00"), bill.getShares().get(0).getAmount());
+        assertEquals(new BigDecimal("125.00"), bill.getShares().get(1).getAmount());
+        assertEquals(new BigDecimal("125.00"), bill.getShares().get(2).getAmount());
     }
 }

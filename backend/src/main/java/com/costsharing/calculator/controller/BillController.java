@@ -38,9 +38,11 @@ public class BillController {
             return ApiResponse.success(billService.calculateAndSave(request));
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage());
+        } catch (com.costsharing.calculator.auth.AccessException e) {
+            throw e;
         } catch (Exception e) {
             log.error("保存账单失败", e);
-            return ApiResponse.error("保存账单失败: " + e.getMessage());
+            return ApiResponse.error("保存账单失败，请稍后重试");
         }
     }
 

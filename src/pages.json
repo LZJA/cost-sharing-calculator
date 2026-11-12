@@ -52,6 +52,28 @@
         "navigationStyle": "custom",
         "navigationBarTitleText": "账单列表"
       }
+    },
+    {
+      "path": "pages/companions/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "同伴",
+        "enableShareAppMessage": true
+      }
+    },
+    {
+      "path": "pages/invitation/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "一起分账"
+      }
+    },
+    {
+      "path": "pages/account/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "我的账号"
+      }
     }
   ],
   "subPackages": [

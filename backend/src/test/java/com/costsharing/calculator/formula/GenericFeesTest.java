@@ -7,6 +7,34 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GenericFeesTest {
+    @Test
+    void fixedPercentagesAtOneHundredNeedNoZeroRemainderStep() {
+        var config = DefaultConfigs.lizi();
+        var step = share("total", new ShareConfig("owner", new BigDecimal("0.5")),
+                new ShareConfig("sister", new BigDecimal("0.5")));
+        step.setPartial(true);
+        step.setAllocationMode("percent");
+        config.getRules().get(0).setSteps(List.of(step));
+        var result = FormulaEngine.calculate(config, null, new BillInput(
+                new BigDecimal("100"), BigDecimal.ZERO, BigDecimal.ZERO, null, null));
+        assertEquals(new BigDecimal("50.00"), result.get(0).getAmount());
+        assertEquals(new BigDecimal("50.00"), result.get(1).getAmount());
+        step.getShares().get(0).setWeight(new BigDecimal("0.25"));
+        assertThrows(IllegalArgumentException.class, () -> CalculatorConfigValidator.validate(config));
+    }
+
+    @Test
+    void editorModeNeverChangesTheActualStoredSplitWeights() {
+        var config = DefaultConfigs.lizi();
+        var step = share("total", new ShareConfig("owner", BigDecimal.ONE),
+                new ShareConfig("sister", new BigDecimal("2")));
+        step.setAllocationMode("equal");
+        config.getRules().get(0).setSteps(List.of(step));
+        var result = FormulaEngine.calculate(config, null, new BillInput(
+                new BigDecimal("90"), BigDecimal.ZERO, BigDecimal.ZERO, null, null));
+        assertEquals(new BigDecimal("30.00"), result.get(0).getAmount());
+        assertEquals(new BigDecimal("60.00"), result.get(1).getAmount());
+    }
     private CalculatorConfig generic() {
         CalculatorConfig config = DefaultConfigs.lizi();
         config.setFees(List.of(new FeeConfig("rent", "房租", "🏠"), new FeeConfig("net", "网费", "🌐")));

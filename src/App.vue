@@ -1,6 +1,8 @@
 <script>
+import { startAccountSession } from "@/api/costSharingApi.js";
 export default {
   onLaunch: async function () {
+    startAccountSession();
     await new Promise((resolve, reject) => {
       // 初始化云开发
       if (wx.cloud) {

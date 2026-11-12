@@ -13,6 +13,9 @@
       </view> -->
     </view>
 
+    <view class="account-bar"><text>我的与同伴共享的计算器</text><text class="account-link" @tap="openAccount">我的账号</text></view>
+    <view v-if="loadError" class="account-error" @tap="loadCardData">{{ loadError }} · 点击重试</view>
+    <view v-else-if="loaded && !calculators.length" class="empty-calculators">还没有计算器，创建一个或从同伴的邀请卡片加入。</view>
     <!-- 卡片列表 -->
     <view class="cards-container">
       <view
@@ -40,8 +43,9 @@
         <view class="card-content">
           <text class="card-title">{{ calculator.name }}</text>
           <text class="card-balance">{{ calculator.description }}</text>
+          <text class="role-label">{{ calculator.currentRole === 'OWNER' ? '我创建的' : '同伴共享' }}</text>
         </view>
-        <view class="card-footer">
+        <view v-if="calculator.currentRole === 'OWNER'" class="card-footer">
           <view class="card-action-icon" @tap.stop="editCalculator(calculator)">
             <text>✏️</text>
           </view>
@@ -96,6 +100,9 @@ const statusBarHeight = ref(0);
 
 // 计算器列表，从后端读取
 const calculators = ref([]);
+const loadError = ref("");
+const loaded = ref(false);
+const openAccount = () => uni.navigateTo({ url: "/pages/account/index" });
 
 const openCalculator = (calculator) => {
   uni.navigateTo({
@@ -224,12 +231,19 @@ const editBackground = (type) => {
   });
 };
 
+const cardLoading = ref(false);
 const loadCardData = async () => {
+  if (cardLoading.value) return;
+  cardLoading.value = true;
   try {
     calculators.value = (await api.calculator.getAll()) || [];
+    loadError.value = "";
+    loaded.value = true;
   } catch (e) {
+    calculators.value = [];
+    loadError.value = e.message || "加载失败";
     console.error("加载计算器失败", e);
-  }
+  } finally { cardLoading.value = false; }
 };
 
 // 设置按钮
@@ -935,4 +949,8 @@ defineExpose({
     transparent 100%
   );
 }
+.account-bar { display: flex; justify-content: space-between; align-items: center; gap: 16rpx; padding: 0 32rpx 28rpx; font-size: 25rpx; color: #6c8795; }
+.account-link { color: #3b7379; padding: 12rpx 0 12rpx 16rpx; }
+.empty-calculators, .account-error { margin: 0 32rpx 28rpx; padding: 28rpx; border-radius: 20rpx; background: rgba(255,255,255,.65); color: #64818d; line-height: 1.7; font-size: 27rpx; }
+.role-label { display: block; font-size: 22rpx; color: #597d82; margin-top: 14rpx; }
 </style>

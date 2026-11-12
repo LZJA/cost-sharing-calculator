@@ -1,5 +1,6 @@
 package com.costsharing.calculator.service;
 
+import com.costsharing.calculator.auth.*;
 import com.costsharing.calculator.dto.BillRequest;
 import com.costsharing.calculator.dto.PreviewRequest;
 import com.costsharing.calculator.entity.Bill;
@@ -55,6 +56,8 @@ public class BillService {
 
         Bill bill = new Bill();
         bill.setCalculatorId(calculator.getId());
+        bill.setCreatedBy(CurrentAccount.id());
+        bill.setCanDelete("OWNER".equals(calculator.getCurrentRole()));
         bill.setYear(request.getYear());
         bill.setMonth(request.getMonth());
         bill.setFees(FeeCatalog.snapshot(calculator.getConfig(), fees));
@@ -76,18 +79,18 @@ public class BillService {
                                    Integer startYear, Integer startMonth,
                                    Integer endYear, Integer endMonth,
                                    int page, int size) {
-        calculatorService.getById(calculatorId);
+        Calculator calculator = calculatorService.getById(calculatorId);
         return billRepository.findByCalculatorAndRange(
                 calculatorId, year, month, startYear, startMonth, endYear, endMonth,
-                PageRequest.of(page, size));
+                PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size))))
+                .map(bill -> { bill.setCanDelete("OWNER".equals(calculator.getCurrentRole())); return bill; });
     }
 
     @Transactional
     public void deleteBill(Long id) {
-        if (!billRepository.existsById(id)) {
-            throw new IllegalArgumentException("账单不存在");
-        }
-        billRepository.deleteById(id);
+        Bill bill = billRepository.findById(id).orElseThrow(() -> new AccessException(404, "账单不存在或无权访问"));
+        calculatorService.requireOwner(bill.getCalculatorId());
+        billRepository.delete(bill);
         log.info("删除账单: id={}", id);
     }
 }

@@ -21,7 +21,7 @@
       <view class="filter-content">
         <text class="filter-icon">📅</text>
         <text class="filter-text">{{ dateRangeText }}</text>
-        <text class="filter-arrow">▼</text>
+        <text class="iconfont icon-a-icon-down filter-arrow"></text>
       </view>
     </view>
 
@@ -669,7 +669,13 @@ defineExpose({
 }
 
 .filter-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32rpx;
+  height: 32rpx;
   font-size: 24rpx;
+  line-height: 1;
   color: #6b8aa6;
 }
 

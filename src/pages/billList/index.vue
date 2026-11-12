@@ -35,7 +35,7 @@
         <uni-swipe-action-item
           v-for="bill in billList"
           :key="bill.id"
-          :right-options="swipeOptions"
+          :right-options="bill.canDelete ? swipeOptions : []"
           @click="handleSwipeClick($event, bill)"
         >
           <view class="bill-item" @tap="viewBillDetail(bill)">
@@ -66,7 +66,7 @@
       <!-- 空状态 -->
       <view v-if="!loading && billList.length === 0" class="empty-state">
         <text class="empty-icon">📋</text>
-        <text class="empty-text">暂无账单数据</text>
+        <text class="empty-text">{{ loadError || "暂无账单数据" }}</text>
       </view>
 
       <!-- 没有更多数据 -->
@@ -165,6 +165,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import api from "@/api/costSharingApi.js";
 import { getBillFees } from "@/utils/formula.js";
 import CustomHeader from "@/components/CustomHeader/CustomHeader.vue";
@@ -183,6 +184,7 @@ const swipeOptions = ref([
 
 // 页面参数
 const calculatorId = ref("");
+const loadError = ref("");
 const pageTitle = ref("账单列表");
 
 // 账单列表数据
@@ -408,6 +410,7 @@ const loadBills = async () => {
       size: pageSize.value,
     });
 
+    loadError.value = "";
     // 处理分页数据
     const newBills = result.content || [];
     billList.value = [...billList.value, ...newBills];
@@ -415,6 +418,8 @@ const loadBills = async () => {
     totalPages.value = result.totalPages || 0;
     hasMore.value = currentPage.value < totalPages.value - 1;
   } catch (error) {
+    loadError.value = error.message || "加载失败，请稍后重试";
+    if ([401, 403, 404].includes(error.status)) { billList.value = []; hasMore.value = false; }
     console.error("加载账单失败", error);
     uni.showToast({
       title: "加载失败",
@@ -471,6 +476,12 @@ const viewBillDetail = (bill) => {
   // 可以导航到详情页或显示详情弹窗
   console.log("查看账单详情", bill);
 };
+
+onShow(() => {
+  if (!calculatorId.value || loading.value) return;
+  billList.value = []; currentPage.value = 0; hasMore.value = true;
+  loadBills();
+});
 
 // 页面加载
 onMounted(() => {

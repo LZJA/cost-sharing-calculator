@@ -1,208 +1,94 @@
-/**
- * 前端API服务封装
- * 使用微信云托管 callContainer API
- */
+/** 微信登录与统一请求。账号身份只由服务端使用登录凭证确认。 */
+const CLOUD_CONFIG = { env: 'prod-0gko48kec6190500', serviceName: 'cost-sharing', servicePrefix: '/api' }
+const TOKEN_KEY = 'cost-sharing-session-v1'
+let loginPromise = null
+let loadingCount = 0
+let pendingErrorMessage = ''
 
-// 云托管服务配置
-const CLOUD_CONFIG = {
-  // 云托管环境ID
-  env: 'prod-0gko48kec6190500',
-  // 云托管服务名称（在云托管控制台查看）
-  serviceName: 'cost-sharing',
-  // 云托管服务路径前缀
-  servicePrefix: '/api'
-}
-
-// 环境判断函数
-function isDevelopment() {
-  const accountInfo = wx.getAccountInfoSync()
-  console.log('accountInfo', accountInfo)
-  if (accountInfo && accountInfo.miniProgram) {
-    console.log('微信环境:', accountInfo.miniProgram)
-    // develop=开发版, trial=体验版, release=正式版
-    return accountInfo.miniProgram.envVersion === 'develop'
+function transport(url, method = 'GET', data = null, token = '') {
+  if (method === 'GET' && data) {
+    const params = Object.entries(data).filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&')
+    if (params) url += `${url.includes('?') ? '&' : '?'}${params}`
+    data = null
   }
-
-  // 默认返回 false（生产环境）
-  return false
+  return new Promise((resolve, reject) => {
+    const header = { 'Content-Type': 'application/json' }
+    if (token) header.Authorization = `Bearer ${token}`
+    const options = {
+      method, data, header,
+      success: (res) => {
+        if (res.statusCode === 200 && res.data?.code === 200) resolve(res.data.data)
+        else {
+          const error = new Error(res.data?.message || '请求失败，请稍后重试')
+          error.status = res.statusCode === 200 ? res.data?.code : res.statusCode
+          reject(error)
+        }
+      },
+      fail: () => reject(new Error('网络连接失败，请稍后重试'))
+    }
+    const development = wx.getAccountInfoSync()?.miniProgram?.envVersion === 'develop'
+    if (development) uni.request({ ...options, url: `http://localhost:8080/api${url}` })
+    else wx.cloud.callContainer({ ...options, config: { env: CLOUD_CONFIG.env }, service: CLOUD_CONFIG.serviceName,
+      path: `${CLOUD_CONFIG.servicePrefix}${url}`, header: { ...header, 'X-WX-SERVICE': CLOUD_CONFIG.serviceName } })
+  })
 }
 
-let request
+// 冷启动重新确认当前微信身份，避免开发者工具切换账号时沿用旧缓存。
+export function startAccountSession() {
+  uni.removeStorageSync(TOKEN_KEY)
+}
 
-if (isDevelopment()) {
-  // 开发环境：使用 uni.request (localhost:8080)
-  // API基础URL
-  const API_BASE_URL = 'http://localhost:8080/api'
+export function ensureLogin() {
+  if (loginPromise) return loginPromise
+  const token = uni.getStorageSync(TOKEN_KEY)
+  if (token) return Promise.resolve(token)
+  loginPromise = (async () => {
+    const code = await new Promise((resolve, reject) => {
+      wx.login({ success: (res) => res.code ? resolve(res.code) : reject(new Error('微信登录失败，请重试')),
+        fail: () => reject(new Error('微信登录失败，请重试')) })
+    })
+    const result = await transport('/auth/login', 'POST', { code })
+    uni.setStorageSync(TOKEN_KEY, result.token)
+    return result.token
+  })().finally(() => { loginPromise = null })
+  return loginPromise
+}
 
-  console.log('使用开发环境API:', API_BASE_URL)
-
-  /**
-   * 通用请求方法 - 使用 uni.request
-   */
-  request = (url, method = 'GET', data = null) => {
-    // 如果是GET请求且有参数，手动拼接到URL
-    // 注意：虽然uni.request支持data参数，但在某些场景下（如签名、特定后端要求）可能需要手动拼接
-    if (method.toUpperCase() === 'GET' && data) {
-      const paramsArray = []
-      Object.keys(data).forEach((key) => {
-        if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
-          paramsArray.push(`${key}=${encodeURIComponent(data[key])}`)
-        }
-      })
-      if (paramsArray.length > 0) {
-        url += (url.indexOf('?') > -1 ? '&' : '?') + paramsArray.join('&')
-        // 拼接到URL后，清空data，避免uni.request再次拼接
-        data = null
+async function request(url, method = 'GET', data = null) {
+  if (loadingCount++ === 0) uni.showLoading({ title: '加载中…' })
+  try {
+    const token = await ensureLogin()
+    try { return await transport(url, method, data, token) }
+    catch (error) {
+      if (error.status !== 401) throw error
+      // 并发请求只有一次重新登录，避免旧请求清掉刚生成的新会话。
+      if (uni.getStorageSync(TOKEN_KEY) === token) uni.removeStorageSync(TOKEN_KEY)
+      return await transport(url, method, data, await ensureLogin())
+    }
+  } catch (error) {
+    pendingErrorMessage = error.message || '请求失败，请重试'
+    throw error
+  } finally {
+    if (--loadingCount === 0) {
+      uni.hideLoading()
+      // 微信的 toast 会关闭 loading，必须先完成 hideLoading 再显示错误。
+      if (pendingErrorMessage) {
+        const message = pendingErrorMessage
+        pendingErrorMessage = ''
+        uni.showToast({ title: message, icon: 'none', duration: 2500 })
       }
     }
-
-    return new Promise((resolve, reject) => {
-      uni.showLoading({ title: '加载中...' })
-
-      uni.request({
-        url: `${API_BASE_URL}${url}`,
-        method,
-        data,
-        header: {
-          'Content-Type': 'application/json'
-        },
-        success: (res) => {
-          uni.hideLoading()
-          console.log('API响应:', res)
-
-          if (res.statusCode === 200 && res.data.code === 200) {
-            resolve(res.data.data)
-          } else {
-            const errorMsg = res.data.message || '请求失败'
-            uni.showToast({
-              title: errorMsg,
-              icon: 'none',
-              duration: 2000
-            })
-            reject(new Error(errorMsg))
-          }
-        },
-        fail: (err) => {
-          uni.hideLoading()
-          console.error('API请求失败:', err)
-          uni.showToast({
-            title: '网络请求失败，请检查网络连接',
-            icon: 'none',
-            duration: 2000
-          })
-          reject(err)
-        }
-      })
-    })
-  }
-} else {
-  // 生产环境：使用微信云托管
-  /**
-   * 通用请求方法 - 使用 wx.cloud.callContainer
-   */
-  request = (url, method = 'GET', data = null) => {
-    // 如果是GET请求且有参数，手动拼接到URL
-    // 注意：虽然uni.request支持data参数，但在某些场景下（如签名、特定后端要求）可能需要手动拼接
-    if (method.toUpperCase() === 'GET' && data) {
-      const paramsArray = []
-      Object.keys(data).forEach((key) => {
-        if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
-          paramsArray.push(`${key}=${encodeURIComponent(data[key])}`)
-        }
-      })
-      if (paramsArray.length > 0) {
-        url += (url.indexOf('?') > -1 ? '&' : '?') + paramsArray.join('&')
-        // 拼接到URL后，清空data，避免uni.request再次拼接
-        data = null
-      }
-    }
-    return new Promise((resolve, reject) => {
-      uni.showLoading({ title: '加载中...' })
-
-      // 构建请求配置
-      const requestConfig = {
-        config: {
-          env: CLOUD_CONFIG.env
-        },
-        service: CLOUD_CONFIG.serviceName,
-        path: `${CLOUD_CONFIG.servicePrefix}${url}`,
-        method: method.toUpperCase(),
-        header: {
-          'Content-Type': 'application/json',
-          'X-WX-SERVICE': CLOUD_CONFIG.serviceName
-        },
-        success: (res) => {
-          uni.hideLoading()
-          console.log('API响应:', res)
-
-          // 处理响应数据
-          if (res.statusCode === 200) {
-            // 尝试解析响应数据
-            const responseData = res.data
-
-            // 检查是否是标准格式 { code, message, data }
-            if (responseData && responseData.code === 200) {
-              resolve(responseData.data)
-            } else if (responseData && responseData.code) {
-              // 有 code 但不是 200
-              const errorMsg = responseData.message || '请求失败'
-              uni.showToast({
-                title: errorMsg,
-                icon: 'none',
-                duration: 2000
-              })
-              reject(new Error(errorMsg))
-            } else {
-              // 直接返回原始数据
-              resolve(responseData)
-            }
-          } else {
-            const errorMsg = res.data?.message || `请求失败 (${res.statusCode})`
-            uni.showToast({
-              title: errorMsg,
-              icon: 'none',
-              duration: 2000
-            })
-            reject(new Error(errorMsg))
-          }
-        },
-        fail: (err) => {
-          uni.hideLoading()
-          console.error('API请求失败:', err)
-          uni.showToast({
-            title: '网络请求失败:' + (err.errMsg || '未知错误'),
-            icon: 'none',
-            duration: 3000
-          })
-          reject(err)
-        }
-      }
-
-      // 对于 POST/PUT/DELETE 请求，添加 data
-      if (data) {
-        const upperMethod = method.toUpperCase()
-        if (upperMethod === 'POST' || upperMethod === 'PUT' || upperMethod === 'PATCH') {
-          requestConfig.data = data
-        }
-      }
-
-      console.log('发起请求:', JSON.stringify(requestConfig, null, 2))
-      wx.cloud.callContainer(requestConfig)
-    })
   }
 }
-
-// ==================== 卡片API ====================
 
 export default {
-  // 卡片相关（旧接口，保留）
-  card: {
-    getAll: () => request('/cards'),
-    getByType: (type) => request(`/cards/${type}`),
-    save: (data) => request('/cards', 'POST', data)
+  auth: {
+    me: () => request('/auth/me'),
+    rename: (displayName) => request('/auth/me', 'PUT', { displayName }),
+    identity: () => request('/auth/identity'),
+    logout: async () => { await request('/auth/session', 'DELETE'); uni.removeStorageSync(TOKEN_KEY) }
   },
-
-  // 可配置的分账计算器
   calculator: {
     getAll: () => request('/calculators'),
     getById: (id) => request(`/calculators/${id}`),
@@ -210,99 +96,22 @@ export default {
     update: (id, data) => request(`/calculators/${id}`, 'PUT', data),
     delete: (id) => request(`/calculators/${id}`, 'DELETE')
   },
-
-  // 通用账单，金额由服务端按规则重算
+  companion: {
+    list: (id) => request(`/calculators/${id}/companions`),
+    invite: (id) => request(`/calculators/${id}/invitations`, 'POST'),
+    revoke: (id, inviteId) => request(`/calculators/${id}/invitations/${inviteId}`, 'DELETE'),
+    remove: (id, accountId) => request(`/calculators/${id}/companions/${accountId}`, 'DELETE'),
+    preview: (token) => request(`/invitations/${encodeURIComponent(token)}`),
+    accept: (token) => request(`/invitations/${encodeURIComponent(token)}/accept`, 'POST')
+  },
   bill: {
     preview: (data) => request('/bills/preview', 'POST', data),
     save: (data) => request('/bills', 'POST', data),
     getPage: (params = {}) => request('/bills', 'GET', params),
     delete: (id) => request(`/bills/${id}`, 'DELETE')
   },
-
-  // 李子账单相关
-  liziBill: {
-    save: (data) => request('/lizi-bills', 'POST', data),
-    getPage: (params = {}) => request('/lizi-bills', 'GET', params),
-    delete: (id) => request(`/lizi-bills/${id}`, 'DELETE')
-  },
-
-  // 鸽子账单相关
-  geziBill: {
-    save: (data) => request('/gezi-bills', 'POST', data),
-    getPage: (params = {}) => request('/gezi-bills', 'GET', params),
-    delete: (id) => request(`/gezi-bills/${id}`, 'DELETE')
-  }
+  // 老页面仅作跳转兼容；服务端已停用这些共用数据接口。
+  card: { getAll: () => request('/cards'), getByType: (type) => request(`/cards/${type}`), save: (data) => request('/cards', 'POST', data) },
+  liziBill: { save: (data) => request('/lizi-bills', 'POST', data), getPage: (data) => request('/lizi-bills', 'GET', data), delete: (id) => request(`/lizi-bills/${id}`, 'DELETE') },
+  geziBill: { save: (data) => request('/gezi-bills', 'POST', data), getPage: (data) => request('/gezi-bills', 'GET', data), delete: (id) => request(`/gezi-bills/${id}`, 'DELETE') }
 }
-
-/**
- * 使用示例：
- *
- * // 在页面中导入
- * import api from '@/api/costSharingApi.js'
- *
- * // ==================== 卡片相关 ====================
- *
- * // 保存卡片
- * const card = await api.card.save({
- *   type: 'lizi',
- *   name: '李子的分账计算器',
- *   description: '分账让生活更简单',
- *   avatar: '🍐',
- *   background: '',
- *   enableBackground: true
- * })
- *
- * // 获取所有卡片
- * const cards = await api.card.getAll()
- *
- * // 根据类型获取卡片
- * const liziCard = await api.card.getByType('lizi')
- *
- * // ==================== 李子账单相关 ====================
- *
- * // 保存李子账单
- * const bill = await api.liziBill.save({
- *   month: 1,
- *   year: 2024,
- *   totalDays: 31,
- *   waterBill: 100.50,
- *   electricBill: 200.75,
- *   gasBill: 80.25,
- *   ownerDays: 15
- * })
- *
- * // 分页查询账单（推荐使用）
- * const page1 = await api.liziBill.getPage({ page: 0, size: 10 })
- * console.log('账单列表:', page1.content)
- * console.log('总记录数:', page1.totalElements)
- *
- * // 查询2024年的账单
- * const year2024 = await api.liziBill.getPage({ year: 2024, page: 0, size: 10 })
- *
- * // 查询2024年1月的账单
- * const jan2024 = await api.liziBill.getPage({ year: 2024, month: 1, page: 0, size: 10 })
- *
- * // 删除账单
- * await api.liziBill.delete(billId)
- *
- * // ==================== 鸽子账单相关 ====================
- *
- * // 保存鸽子账单
- * const geziBill = await api.geziBill.save({
- *   waterBill: 100.50,
- *   electricBill: 200.75,
- *   gasBill: 80.25,
- *   splitRule: '普通分账',  // 或 '特殊分账'
- *   year: 2024,
- *   month: 1
- * })
- *
- * // 分页查询账单（推荐使用）
- * const geziPage = await api.geziBill.getPage({ page: 0, size: 10 })
- *
- * // 查询2024年的账单
- * const geziYear2024 = await api.geziBill.getPage({ year: 2024, page: 0, size: 10 })
- *
- * // 删除账单
- * await api.geziBill.delete(billId)
- */
