@@ -65,13 +65,13 @@ test('微信登录失败不会请求私人数据或缓存错误会话', async ()
   assert.equal(h.storage.size, 0);
 });
 
-test('云托管也必须携带认证，只接受标准成功响应', async () => {
+test('正式版请求阿里云域名并携带认证，只接受标准成功响应', async () => {
   const h = harness(options => path(options).endsWith('/auth/login') ? ok({ token: 'cloud-session' }) : ok({ people: [] }), true);
   await h.api.companion.list(7);
   const call=h.calls.at(-1);
-  assert.equal(call.path, '/api/calculators/7/companions');
+  assert.equal(call.url, 'https://cost.higheq.top/api/calculators/7/companions');
   assert.equal(call.header.Authorization, 'Bearer cloud-session');
-  assert.equal(call.header['X-WX-SERVICE'], 'cost-sharing');
+  assert.equal(call.header['X-WX-SERVICE'], undefined);
 });
 
 

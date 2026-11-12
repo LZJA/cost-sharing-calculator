@@ -1,5 +1,5 @@
 /** 微信登录与统一请求。账号身份只由服务端使用登录凭证确认。 */
-const CLOUD_CONFIG = { env: 'prod-0gko48kec6190500', serviceName: 'cost-sharing', servicePrefix: '/api' }
+const API_BASE_URL = 'https://cost.higheq.top/api'
 const TOKEN_KEY = 'cost-sharing-session-v1'
 let loginPromise = null
 let loadingCount = 0
@@ -28,9 +28,7 @@ function transport(url, method = 'GET', data = null, token = '') {
       fail: () => reject(new Error('网络连接失败，请稍后重试'))
     }
     const development = wx.getAccountInfoSync()?.miniProgram?.envVersion === 'develop'
-    if (development) uni.request({ ...options, url: `http://localhost:8080/api${url}` })
-    else wx.cloud.callContainer({ ...options, config: { env: CLOUD_CONFIG.env }, service: CLOUD_CONFIG.serviceName,
-      path: `${CLOUD_CONFIG.servicePrefix}${url}`, header: { ...header, 'X-WX-SERVICE': CLOUD_CONFIG.serviceName } })
+    uni.request({ ...options, url: `${development ? 'http://localhost:8080/api' : API_BASE_URL}${url}` })
   })
 }
 
