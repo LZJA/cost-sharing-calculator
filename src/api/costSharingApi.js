@@ -5,6 +5,38 @@ let loginPromise = null
 let loadingCount = 0
 let pendingErrorMessage = ''
 
+function requestBaseUrl() {
+  // 发行包固定使用公网；develop 不是“本机模拟器”的可靠标识。
+  if (process.env.NODE_ENV !== 'development') return API_BASE_URL
+  try {
+    const device = typeof wx.getDeviceInfo === 'function' ? wx.getDeviceInfo() : wx.getSystemInfoSync()
+    if (device.platform === 'devtools' && wx.getAccountInfoSync()?.miniProgram?.envVersion === 'develop') {
+      return 'http://localhost:8080/api'
+    }
+  } catch (_) { /* 无法确认本机环境时使用公网接口。 */ }
+  return API_BASE_URL
+}
+
+function networkFailure(nativeError, method, url, baseUrl) {
+  const nativeMessage = String(nativeError?.errMsg || 'request:fail')
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[request URL omitted]')
+    .replace(/Bearer\s+[^\s]+/gi, 'Bearer [omitted]')
+    .slice(0, 300)
+  const reason = /not in.*domain|合法域名/i.test(nativeMessage) ? 'domain'
+    : /ssl|tls|cert|handshake/i.test(nativeMessage) ? 'tls'
+    : /dns|resolve|NAME_NOT_RESOLVED/i.test(nativeMessage) ? 'dns'
+    : /timeout|TIMED_OUT/i.test(nativeMessage) ? 'timeout' : 'connection'
+  const error = new Error('网络连接失败，请稍后重试')
+  error.networkReason = reason
+  error.nativeMessage = nativeMessage
+  // 不记录请求参数、完整路径、微信 code、会话令牌或邀请令牌。
+  const detail = { client: 'network-20261113', reason, nativeMessage, method, baseUrl,
+    resource: url.split('?')[0].split('/')[1] || 'unknown' }
+  try { console.error('[api:network]', detail) } catch (_) {}
+  try { wx.getRealtimeLogManager?.().error('api_network_failure', detail) } catch (_) {}
+  return error
+}
+
 function transport(url, method = 'GET', data = null, token = '') {
   if (method === 'GET' && data) {
     const params = Object.entries(data).filter(([, value]) => value !== null && value !== undefined && value !== '')
@@ -13,6 +45,7 @@ function transport(url, method = 'GET', data = null, token = '') {
     data = null
   }
   return new Promise((resolve, reject) => {
+    const baseUrl = requestBaseUrl()
     const header = { 'Content-Type': 'application/json' }
     if (token) header.Authorization = `Bearer ${token}`
     const options = {
@@ -25,10 +58,9 @@ function transport(url, method = 'GET', data = null, token = '') {
           reject(error)
         }
       },
-      fail: () => reject(new Error('网络连接失败，请稍后重试'))
+      fail: (error) => reject(networkFailure(error, method, url, baseUrl))
     }
-    const development = wx.getAccountInfoSync()?.miniProgram?.envVersion === 'develop'
-    uni.request({ ...options, url: `${development ? 'http://localhost:8080/api' : API_BASE_URL}${url}` })
+    uni.request({ ...options, url: `${baseUrl}${url}` })
   })
 }
 

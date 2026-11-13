@@ -94,7 +94,11 @@ npm run dev:mp-weixin
 npm run build:mp-weixin
 ```
 
-构建完成后，使用微信开发者工具打开 `dist/dev/mp-weixin` 目录。
+构建完成后，使用微信开发者工具打开 **`dist/build/mp-weixin`** 目录上传。`dist/dev/mp-weixin` 用于日常开发，不作为审核发行包。
+
+构建会自动检查发行包：必须使用 `https://cost.higheq.top/api`，不得包含本地接口或旧云托管调用，并为发行目录开启域名校验。开发时仅本机开发者工具模拟器可使用本地接口，真机默认访问公网，不再仅凭 `envVersion` 决定是否请求 localhost。
+
+提审前请关闭手机调试模式，用安卓手机分别在 Wi-Fi 和移动网络验证首页、新建计算器、试算、保存和查看账单。出现网络失败时，开发者工具控制台及微信实时日志中的 `api_network_failure` 会提供脱敏后的原因分类与原始错误信息。按本次审核反馈，重新提交时还需要上传完整操作录屏。
 
 ## 代码架构
 
