@@ -1,0 +1,30 @@
+README.md
+  s_4f451d265ed3e6::t_60a2d9f6d72699 97-101
+src/api/costSharingApi.js
+  s_4f451d265ed3e6::t_d6c1f388744acc 8-39,48,61,63
+scripts/check-mp-release.mjs
+  s_4f451d265ed3e6::t_60a2d9f6d72699 1-15
+package.json
+  s_4f451d265ed3e6::t_60a2d9f6d72699 9
+tests/auth.test.mjs
+  s_4f451d265ed3e6::t_513f4701fc2a47 7,11,15,22-24,28,104-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.37",
+  "base_commit_sha": "eb13a82fe3ebc9492d346752c783b1507b1c9b78",
+  "prompts": {},
+  "sessions": {
+    "s_4f451d265ed3e6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c9df-d0cc-7cb2-9410-88ae59a3b91f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "lizijian <lizijian@sdpjw.com>",
+      "custom_attributes": {
+        "internal_commit_event_allowlist": "codeup.aliyun.com,codeup-*,sd"
+      }
+    }
+  }
+}
